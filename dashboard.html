@@ -5,247 +5,334 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Avisekh Bekary — Owner Dashboard</title>
 <style>
-  :root{
-    --cream:#FFF8EF;
-    --cream-dark:#FBEEDD;
-    --brown:#5C3A21;
-    --brown-dark:#3E2712;
-    --terracotta:#D97B4F;
-    --terracotta-dark:#B85E36;
-    --green:#4C8B5C;
-    --line:#EAD9C4;
-    --white:#FFFFFF;
-    font-size:16px;
+  :root {
+    --cream: #FFF8EF;
+    --brown: #5C3A21;
+    --brown-dark: #3E2712;
+    --terracotta: #D97B4F;
+    --terracotta-dark: #B85E36;
+    --green: #4C8B5C;
+    --line: #EAD9C4;
+    --white: #FFFFFF;
+    --red: #D32F2F;
   }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    background:var(--cream);
-    color:var(--brown-dark);
-    padding-bottom:40px;
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--cream);
+    color: var(--brown-dark);
+    padding: 20px;
   }
-  header.top{
-    background:var(--brown);
-    color:var(--cream);
-    padding:16px;
-    text-align:center;
-    border-bottom:4px solid var(--terracotta);
+  .container { max-width: 900px; margin: 0 auto; }
+  
+  /* Login Screen */
+  #loginScreen {
+    max-width: 400px;
+    margin: 60px auto;
+    background: var(--white);
+    padding: 30px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   }
-  header.top h1{margin:0 0 4px;font-size:1.3rem;}
-  header.top p{margin:0;font-size:0.85rem;opacity:0.9;}
-  main{padding:14px 14px 20px;max-width:640px;margin:0 auto;}
-  .btn{
-    border:none;border-radius:10px;padding:10px 14px;font-size:0.92rem;font-weight:700;
-    cursor:pointer;
+  #loginScreen h2 { color: var(--brown); margin-top: 0; }
+  #loginScreen input {
+    width: 100%; padding: 12px; margin: 8px 0;
+    border: 1px solid var(--line); border-radius: 8px; font-size: 1rem;
   }
-  .btn.primary{background:var(--terracotta);color:white;}
-  .btn.primary:active{background:var(--terracotta-dark);}
-  .btn.outline{background:white;border:1.5px solid var(--terracotta);color:var(--terracotta-dark);}
-  .btn.full{width:100%;}
-  .btn.small{padding:6px 10px;font-size:0.82rem;}
-  .disclaimer{
-    background:#FBEAD9;border:1px solid var(--terracotta);border-radius:10px;
-    padding:10px 12px;font-size:0.82rem;color:var(--brown-dark);margin:10px 0 4px;
+  
+  /* Dashboard Screen */
+  #dashboardScreen { display: none; }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
   }
-  .empty-msg{text-align:center;color:#8a6a4d;padding:40px 10px;}
-  .status-col{margin-bottom:20px;}
-  .status-title{
-    font-weight:800;background:var(--brown);color:white;padding:6px 12px;border-radius:20px;
-    display:inline-block;font-size:0.85rem;margin-bottom:10px;
+  header h1 { margin: 0; color: var(--brown); font-size: 1.5rem; }
+  
+  .controls {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
   }
-  .order-card{
-    background:white;border:1px solid var(--line);border-radius:12px;padding:10px 12px;
-    margin-bottom:10px;font-size:0.85rem;
+  .btn {
+    border: none; border-radius: 8px; padding: 10px 16px;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
   }
-  .order-card .items{margin:6px 0;padding-left:16px;}
-  .order-card .actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
-  a.wa-link{color:var(--green);font-weight:700;text-decoration:none;}
-  form label{display:block;font-weight:600;margin:10px 0 4px;font-size:0.9rem;}
-  form input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);font-size:0.95rem;}
-  #orderSearchInput{
-    width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);
-    margin-bottom:14px;font-size:0.95rem;
+  .btn.primary { background: var(--terracotta); color: white; }
+  .btn.primary:hover { background: var(--terracotta-dark); }
+  .btn.outline { background: white; border: 1.5px solid var(--brown); color: var(--brown); }
+  .btn.danger { background: var(--red); color: white; }
+  
+  .info-banner {
+    background: #FBEAD9; border: 1px solid var(--terracotta);
+    border-radius: 10px; padding: 12px 16px; font-size: 0.85rem;
+    color: var(--brown-dark); margin-bottom: 20px;
   }
+
+  /* Order Cards */
+  .order-card {
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px; margin-bottom: 12px;
+    border-left: 5px solid var(--terracotta);
+  }
+  .order-card.status-New { border-left-color: #2196F3; }
+  .order-card.status-Baking { border-left-color: #FF9800; }
+  .order-card.status-Ready { border-left-color: var(--green); }
+  .order-card.status-Picked { border-left-color: #9E9E9E; opacity: 0.7; }
+
+  .order-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
+  }
+  .order-id { font-weight: 800; font-size: 1.1rem; color: var(--brown); }
+  .order-time { font-size: 0.8rem; color: #8a6a4d; }
+  
+  .customer-info { font-size: 0.9rem; margin-bottom: 10px; }
+  .customer-info strong { color: var(--brown); }
+  
+  .items-list {
+    background: var(--cream); border-radius: 8px; padding: 10px 14px;
+    margin: 10px 0; font-size: 0.9rem;
+  }
+  .items-list ul { margin: 0; padding-left: 20px; }
+  .items-list li { margin-bottom: 4px; }
+  
+  .order-total { font-weight: 700; font-size: 1.05rem; color: var(--terracotta-dark); margin-top: 8px; }
+  .order-note { font-size: 0.85rem; color: var(--red); font-style: italic; margin-top: 6px; }
+
+  .status-actions {
+    display: flex; gap: 8px; margin-top: 14px; align-items: center; flex-wrap: wrap;
+  }
+  .status-actions select {
+    padding: 8px; border-radius: 8px; border: 1px solid var(--line);
+    font-size: 0.9rem; font-weight: 600;
+  }
+
+  .empty-state {
+    text-align: center; padding: 40px; color: #8a6a4d;
+    background: var(--white); border-radius: 12px; border: 1px dashed var(--line);
+  }
+  .loading { text-align: center; padding: 20px; color: var(--brown); }
+  
+  .hidden { display: none !important; }
 </style>
 </head>
 <body>
 
-<header class="top">
-  <h1>👩‍🍳 Avisekh Bekary — Owner Dashboard</h1>
-  <p>Staff / owner access only</p>
-</header>
-
-<main>
-  <div id="loginBox">
-    <div class="disclaimer">This area is for the bakery owner only. Please log in.</div>
-    <form onsubmit="return ownerLogin(event)">
-      <label>Email</label>
-      <input type="email" id="ownerEmail" required>
-      <label>Password</label>
-      <input type="password" id="ownerPassword" required>
-      <div id="loginError" style="color:#B00020;font-size:0.85rem;margin-top:8px;"></div>
-      <button type="submit" class="btn primary full" style="margin-top:14px;">Log In</button>
+<div class="container">
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen">
+    <h2>👩‍🍳 Avisekh Bekary</h2>
+    <p style="color:#8a6a4d; font-size:0.9rem;">Staff / owner access only.<br>This area is for the bakery owner only. Please log in.</p>
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit" class="btn primary" style="width:100%; margin-top:10px;">Log In</button>
     </form>
+    <p id="loginError" style="color:var(--red); font-size:0.85rem; margin-top:10px; display:none;"></p>
   </div>
 
-  <div id="dashboardBox" style="display:none;">
-    <button class="btn outline" style="margin-bottom:12px;" onclick="ownerLogout()">Log Out</button>
-    <div class="disclaimer">
-      Orders here are shared across all devices (saved online via Supabase). This page doesn't send you an automatic alert (like SMS or push notification) when a new order comes in — tap "Refresh Orders" below to check, or ask customers to also message you on WhatsApp.
+  <!-- DASHBOARD SCREEN -->
+  <div id="dashboardScreen">
+    <header>
+      <h1>📦 Owner Dashboard</h1>
+      <div class="controls">
+        <span id="userEmail" style="font-size:0.85rem; color:#8a6a4d;"></span>
+        <button class="btn outline" onclick="logout()">Log Out</button>
+      </div>
+    </header>
+
+    <div class="info-banner">
+      ⚠️ <b>Note:</b> Orders here are shared across all devices (saved online via Supabase). This page doesn't send you an automatic alert (like SMS or push notification) when a new order comes in — tap "Refresh Orders" below to check, or ask customers to also message you on WhatsApp.
     </div>
-    <input type="text" id="orderSearchInput" placeholder="Search by Order ID, name, or phone…" oninput="filterDashboardOrders()">
-    <div id="dashboardContent"></div>
+
+    <div class="controls" style="margin-bottom: 20px;">
+      <button class="btn primary" onclick="fetchOrders()">🔄 Refresh Orders</button>
+      <span id="lastRefreshed" style="font-size:0.8rem; color:#8a6a4d; margin-left:auto;"></span>
+    </div>
+
+    <div id="ordersContainer">
+      <div class="loading">Loading orders...</div>
+    </div>
   </div>
-</main>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ================= SUPABASE SETUP ================= */
+// Replace with your actual Supabase URL and Anon Key
 const SUPABASE_URL = "https://makoyqtelhqemvyabvxs.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ha295cXRlbGhxZW12eWFidnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MDI3NzgsImV4cCI6MjEwMzk3ODc3OH0.4VjPjWWav5vBWI5klAPb24NiHPXDQPoioOxJL3yHPoc";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* ================= OWNER AUTH ================= */
-async function ownerLogin(e){
-  e.preventDefault();
-  const email = document.getElementById('ownerEmail').value.trim();
-  const password = document.getElementById('ownerPassword').value;
-  const errBox = document.getElementById('loginError');
-  errBox.textContent = "";
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if(error){
-    errBox.textContent = "Login failed: " + error.message;
-    return false;
-  }
-  await showDashboardScreen();
-  return false;
-}
-async function ownerLogout(){
-  await sb.auth.signOut();
-  document.getElementById('ownerPassword').value = "";
-  showDashboardScreen();
-}
-async function showDashboardScreen(){
+let refreshInterval = null;
+
+/* ================= AUTH ================= */
+async function checkAuth() {
   const { data: { session } } = await sb.auth.getSession();
-  const loginBox = document.getElementById('loginBox');
-  const dashBox = document.getElementById('dashboardBox');
-  if(session){
-    loginBox.style.display = 'none';
-    dashBox.style.display = 'block';
-    const searchBox = document.getElementById('orderSearchInput');
-    if(searchBox) searchBox.value = "";
-    renderDashboard();
+  if (session) {
+    showDashboard(session.user.email);
   } else {
-    loginBox.style.display = 'block';
-    dashBox.style.display = 'none';
+    showLogin();
   }
 }
 
-/* ================= ORDERS / DASHBOARD (Supabase-backed) ================= */
-async function loadOrders(){
-  const { data, error } = await sb.from('orders').select('*').order('placed_at', {ascending:false});
-  if(error){ console.error(error); return null; }
-  return data;
-}
-async function updateOrderStatus(id, newStatus){
-  const { error } = await sb.from('orders').update({status:newStatus}).eq('id', id);
-  if(error){ alert("Couldn't update status — check your internet connection and try again."); console.error(error); return; }
-  renderDashboard();
-}
-const STATUS_FLOW = ["New","Baking","Ready","Picked Up"];
-let allOrdersCache = [];
-
-async function renderDashboard(){
-  const content = document.getElementById('dashboardContent');
-  content.innerHTML = `<div class="empty-msg">Loading orders…</div>`;
-  const orders = await loadOrders();
-  content.innerHTML = "";
-  if(orders === null){
-    content.innerHTML = `<div class="empty-msg">Couldn't load orders. Check your internet connection and tap Refresh.</div>
-      <button class="btn outline full" onclick="renderDashboard()">Refresh</button>`;
-    return;
-  }
-  allOrdersCache = orders;
-  content.innerHTML = `<button class="btn outline full" style="margin-bottom:14px;" onclick="renderDashboard()">🔄 Refresh Orders</button>`;
-  const searchBox = document.getElementById('orderSearchInput');
-  const query = searchBox ? searchBox.value.trim().toLowerCase() : "";
-  const filtered = query ? orders.filter(o=>
-    o.id.toLowerCase().includes(query) ||
-    (o.name||"").toLowerCase().includes(query) ||
-    (o.phone||"").toLowerCase().includes(query)
-  ) : orders;
-
-  if(orders.length === 0){
-    content.innerHTML += `<div class="empty-msg">No orders yet.</div>`;
-    return;
-  }
-  if(filtered.length === 0){
-    content.innerHTML += `<div class="empty-msg">No orders match your search.</div>`;
-    return;
-  }
-  renderOrderColumns(content, filtered);
+function showLogin() {
+  document.getElementById('loginScreen').style.display = 'block';
+  document.getElementById('dashboardScreen').style.display = 'none';
+  stopAutoRefresh();
 }
 
-function filterDashboardOrders(){
-  const content = document.getElementById('dashboardContent');
-  const refreshBtn = content.querySelector('button.outline') ? content.querySelector('button.outline').outerHTML : `<button class="btn outline full" style="margin-bottom:14px;" onclick="renderDashboard()">🔄 Refresh Orders</button>`;
-  const searchBox = document.getElementById('orderSearchInput');
-  const query = searchBox.value.trim().toLowerCase();
-  const filtered = query ? allOrdersCache.filter(o=>
-    o.id.toLowerCase().includes(query) ||
-    (o.name||"").toLowerCase().includes(query) ||
-    (o.phone||"").toLowerCase().includes(query)
-  ) : allOrdersCache;
-  content.innerHTML = refreshBtn;
-  if(allOrdersCache.length === 0){
-    content.innerHTML += `<div class="empty-msg">No orders yet.</div>`;
-    return;
-  }
-  if(filtered.length === 0){
-    content.innerHTML += `<div class="empty-msg">No orders match your search.</div>`;
-    return;
-  }
-  renderOrderColumns(content, filtered);
+function showDashboard(email) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('dashboardScreen').style.display = 'block';
+  document.getElementById('userEmail').textContent = email;
+  fetchOrders();
+  startAutoRefresh();
 }
 
-function renderOrderColumns(content, orders){
-  STATUS_FLOW.forEach(status=>{
-    const group = orders.filter(o=>o.status===status);
-    const col = document.createElement('div');
-    col.className = 'status-col';
-    const titleEmoji = {"New":"🆕","Baking":"🔥","Ready":"✅","Picked Up":"📦"}[status];
-    col.innerHTML = `<div class="status-title">${titleEmoji} ${status} (${group.length})</div>`;
-    if(group.length === 0){
-      col.innerHTML += `<div class="note-line">No orders here.</div>`;
-    }
-    group.forEach(o=>{
-      const card = document.createElement('div');
-      card.className = 'order-card';
-      let itemsHtml = (o.items||[]).map(c=>{
-        let d = `${c.name} × ${c.qty}`;
-        if(c.type==="Made-to-order") d += ` (pickup ${c.pickupDate}, ${c.pickupTime})`;
-        return `<li>${d}</li>`;
-      }).join("");
-      const nextIdx = STATUS_FLOW.indexOf(status)+1;
-      const nextStatus = STATUS_FLOW[nextIdx];
-      card.innerHTML = `
-        <b>${o.id}</b> — ${o.name} (<a class="wa-link" href="https://wa.me/91${o.phone}" target="_blank">${o.phone}</a>)<br>
-        <ul class="items">${itemsHtml}</ul>
-        Total: ₹${o.total} · Payment: ${o.pay}
-        ${o.note ? "<br>Note: "+o.note : ""}
-        <div class="actions">
-          ${nextStatus ? `<button class="btn primary small" onclick="updateOrderStatus('${o.id}','${nextStatus}')">Move to ${nextStatus}</button>` : ""}
-        </div>
-      `;
-      col.appendChild(card);
-    });
-    content.appendChild(col);
+async function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const errorEl = document.getElementById('loginError');
+  
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    errorEl.textContent = "Login failed: " + error.message;
+    errorEl.style.display = 'block';
+  } else {
+    errorEl.style.display = 'none';
+    showDashboard(data.user.email);
+  }
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  showLogin();
+}
+
+/* ================= ORDERS MANAGEMENT ================= */
+async function fetchOrders() {
+  const container = document.getElementById('ordersContainer');
+  container.innerHTML = '<div class="loading">Loading orders...</div>';
+
+  const { data, error } = await sb
+    .from('orders')
+    .select('*')
+    .order('placed_at', { ascending: false });
+
+  if (error) {
+    container.innerHTML = `<div class="empty-state">Error loading orders: ${error.message}</div>`;
+    return;
+  }
+
+  document.getElementById('lastRefreshed').textContent = 'Last refreshed: ' + new Date().toLocaleTimeString();
+
+  if (!data || data.length === 0) {
+    container.innerHTML = '<div class="empty-state">No orders found yet. 🥐</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  data.forEach(order => {
+    container.appendChild(createOrderCard(order));
   });
 }
 
+function createOrderCard(order) {
+  const div = document.createElement('div');
+  const statusClass = order.status.replace(' ', ''); // e.g., "Picked Up" -> "PickedUp"
+  div.className = `order-card status-${statusClass}`;
+
+  const date = new Date(order.placed_at).toLocaleString('en-IN', { 
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
+  });
+
+  let itemsHtml = '';
+  if (Array.isArray(order.items)) {
+    itemsHtml = '<ul>' + order.items.map(item => {
+      let detail = `${item.name} × ${item.qty}`;
+      if (item.type === 'Made-to-order') {
+        detail += ` <small>(Pickup: ${item.pickupDate} ${item.pickupTime})</small>`;
+        if (item.message) detail += ` <br><small>🎂 "${item.message}"</small>`;
+      }
+      return `<li>${detail}</li>`;
+    }).join('') + '</ul>';
+  }
+
+  div.innerHTML = `
+    <div class="order-header">
+      <div>
+        <div class="order-id">#${order.id}</div>
+        <div class="order-time">${date}</div>
+      </div>
+      <div style="font-weight:700; color:var(--brown);">${order.status}</div>
+    </div>
+    <div class="customer-info">
+      👤 <strong>${order.name}</strong> &nbsp;|&nbsp; 📞 <a href="tel:${order.phone}" style="color:var(--terracotta-dark);text-decoration:none;">${order.phone}</a>
+    </div>
+    <div class="items-list">
+      ${itemsHtml}
+      <div class="order-total">Total: ₹${order.total} &nbsp;|&nbsp; Payment: ${order.pay}</div>
+      ${order.note ? `<div class="order-note">📝 Note: ${order.note}</div>` : ''}
+    </div>
+    <div class="status-actions">
+      <label style="font-size:0.85rem; font-weight:600;">Update Status:</label>
+      <select onchange="updateOrderStatus('${order.id}', this.value)">
+        <option value="New" ${order.status === 'New' ? 'selected' : ''}>🆕 New</option>
+        <option value="Baking" ${order.status === 'Baking' ? 'selected' : ''}>🔥 Baking</option>
+        <option value="Ready" ${order.status === 'Ready' ? 'selected' : ''}>✅ Ready for Pickup</option>
+        <option value="Picked Up" ${order.status === 'Picked Up' ? 'selected' : ''}>📦 Picked Up</option>
+      </select>
+      <a href="https://wa.me/91${order.phone}?text=Hi%20${encodeURIComponent(order.name)}!%20Your%20order%20#${order.id}%20at%20Avisekh%20Bekary%20is%20now%20${encodeURIComponent(order.status)}." 
+         target="_blank" class="btn outline" style="font-size:0.8rem; padding:8px 12px;">
+         💬 WhatsApp Customer
+      </a>
+    </div>
+  `;
+  return div;
+}
+
+async function updateOrderStatus(orderId, newStatus) {
+  const { error } = await sb
+    .from('orders')
+    .update({ status: newStatus })
+    .eq('id', orderId);
+
+  if (error) {
+    alert('Failed to update status: ' + error.message);
+    fetchOrders(); // Revert UI on error
+  } else {
+    // Optional: Show a brief success toast or just let the UI reflect it on next refresh
+    console.log(`Order ${orderId} updated to ${newStatus}`);
+  }
+}
+
+/* ================= AUTO REFRESH ================= */
+function startAutoRefresh() {
+  stopAutoRefresh();
+  refreshInterval = setInterval(fetchOrders, 30000); // Refresh every 30 seconds
+}
+
+function stopAutoRefresh() {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+    refreshInterval = null;
+  }
+}
+
 /* ================= INIT ================= */
-showDashboardScreen();
+checkAuth();
+
+// Listen for auth state changes (e.g., if logged out from another tab)
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' && session) {
+    showDashboard(session.user.email);
+  } else if (event === 'SIGNED_OUT') {
+    showLogin();
+  }
+});
 </script>
 </body>
 </html>
