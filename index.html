@@ -77,12 +77,15 @@
   .btn.outline{background:white;border:1.5px solid var(--terracotta);color:var(--terracotta-dark);}
   .btn.full{width:100%;}
   .btn.small{padding:6px 10px;font-size:0.82rem;}
-  .qty-row{display:flex;align-items:center;gap:10px;}
-  .qty-row button{
-    width:32px;height:32px;border-radius:8px;border:1px solid var(--line);
+  .qty-row{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;}
+  .qty-row button.small-step{
+    width:32px;height:32px;flex-shrink:0;border-radius:8px;border:1px solid var(--line);
     background:var(--cream-dark);font-size:1.1rem;cursor:pointer;
   }
-  .qty-row span{min-width:22px;text-align:center;font-weight:700;}
+  .qty-row span{min-width:20px;text-align:center;font-weight:700;flex-shrink:0;}
+  .qty-row button.btn.primary{
+    margin-left:auto;white-space:nowrap;flex-shrink:0;padding:10px 12px;font-size:0.85rem;
+  }
   .made-panel{
     background:var(--cream-dark);border-radius:10px;padding:10px;margin-top:4px;
     display:none;
@@ -232,10 +235,26 @@
 <div id="screen-dashboard" class="screen">
   <main>
     <h2 style="color:var(--brown)">Owner Dashboard</h2>
-    <div class="disclaimer">
-      Orders here are shared across all devices (saved online via Supabase). This page still doesn't send you an automatic alert (like SMS or push notification) when a new order comes in — tap "Refresh Orders" below to check, or ask customers to also message you on WhatsApp.
+
+    <div id="loginBox">
+      <div class="disclaimer">This area is for the bakery owner only. Please log in.</div>
+      <form onsubmit="return ownerLogin(event)">
+        <label style="font-weight:600;display:block;margin:10px 0 4px;">Email</label>
+        <input type="email" id="ownerEmail" required style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);">
+        <label style="font-weight:600;display:block;margin:10px 0 4px;">Password</label>
+        <input type="password" id="ownerPassword" required style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);">
+        <div id="loginError" style="color:#B00020;font-size:0.85rem;margin-top:8px;"></div>
+        <button type="submit" class="btn primary full" style="margin-top:14px;">Log In</button>
+      </form>
     </div>
-    <div id="dashboardContent"></div>
+
+    <div id="dashboardBox" style="display:none;">
+      <button class="btn outline" style="margin-bottom:12px;" onclick="ownerLogout()">Log Out</button>
+      <div class="disclaimer">
+        Orders here are shared across all devices (saved online via Supabase). This page still doesn't send you an automatic alert (like SMS or push notification) when a new order comes in — tap "Refresh Orders" below to check, or ask customers to also message you on WhatsApp.
+      </div>
+      <div id="dashboardContent"></div>
+    </div>
   </main>
 </div>
 
@@ -248,8 +267,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* ================= SUPABASE SETUP ================= */
-const SUPABASE_URL = "https://ktyibnbbxrfokzeuidkz.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0eWlibmJieHJmb2t6ZXVpZGt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0Njk2MDgsImV4cCI6MjEwNDA0NTYwOH0.yJIJHtaNfYWC_Nwo0ng7TNVsJOh7puR-JAGhM5G-4cQ";
+const SUPABASE_URL = "https://makoyqtelhqemvyabvxs.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ha295cXRlbGhxZW12eWFidnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MDI3NzgsImV4cCI6MjEwMzk3ODc3OH0.4VjPjWWav5vBWI5klAPb24NiHPXDQPoioOxJL3yHPoc";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ================= DATA ================= */
@@ -426,10 +445,10 @@ function renderItemCard(item, uid){
     qtyRow.className = 'qty-row';
     let qty = 1;
     qtyRow.innerHTML = `
-      <button type="button" onclick="this.nextElementSibling.textContent = Math.max(1, parseInt(this.nextElementSibling.textContent)-1)">−</button>
+      <button type="button" class="small-step" onclick="this.nextElementSibling.textContent = Math.max(1, parseInt(this.nextElementSibling.textContent)-1)">−</button>
       <span>1</span>
-      <button type="button" onclick="this.previousElementSibling.textContent = parseInt(this.previousElementSibling.textContent)+1">+</button>
-      <button type="button" class="btn primary" style="margin-left:auto;">Add to Cart</button>
+      <button type="button" class="small-step" onclick="this.previousElementSibling.textContent = parseInt(this.previousElementSibling.textContent)+1">+</button>
+      <button type="button" class="btn primary">Add to Cart</button>
     `;
     const addBtn = qtyRow.querySelector('button.primary');
     addBtn.onclick = ()=>{
@@ -464,9 +483,9 @@ function renderItemCard(item, uid){
       <select class="pd-time">${timeOpts}</select>
       <label>Quantity (${item.unit})</label>
       <div class="qty-row">
-        <button type="button" onclick="this.nextElementSibling.textContent = Math.max(1, parseInt(this.nextElementSibling.textContent)-1)">−</button>
+        <button type="button" class="small-step" onclick="this.nextElementSibling.textContent = Math.max(1, parseInt(this.nextElementSibling.textContent)-1)">−</button>
         <span>1</span>
-        <button type="button" onclick="this.previousElementSibling.textContent = parseInt(this.previousElementSibling.textContent)+1">+</button>
+        <button type="button" class="small-step" onclick="this.previousElementSibling.textContent = parseInt(this.previousElementSibling.textContent)+1">+</button>
       </div>
       <label>Weight / Size preference (optional)</label>
       <input type="text" class="pd-weight" placeholder="e.g. 1 kg">
@@ -644,6 +663,40 @@ function drawOrderCode(text){
   });
 }
 
+/* ================= OWNER AUTH ================= */
+async function ownerLogin(e){
+  e.preventDefault();
+  const email = document.getElementById('ownerEmail').value.trim();
+  const password = document.getElementById('ownerPassword').value;
+  const errBox = document.getElementById('loginError');
+  errBox.textContent = "";
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){
+    errBox.textContent = "Login failed: " + error.message;
+    return false;
+  }
+  await showDashboardScreen();
+  return false;
+}
+async function ownerLogout(){
+  await sb.auth.signOut();
+  document.getElementById('ownerPassword').value = "";
+  showDashboardScreen();
+}
+async function showDashboardScreen(){
+  const { data: { session } } = await sb.auth.getSession();
+  const loginBox = document.getElementById('loginBox');
+  const dashBox = document.getElementById('dashboardBox');
+  if(session){
+    loginBox.style.display = 'none';
+    dashBox.style.display = 'block';
+    renderDashboard();
+  } else {
+    loginBox.style.display = 'block';
+    dashBox.style.display = 'none';
+  }
+}
+
 /* ================= ORDERS / DASHBOARD (Supabase-backed) ================= */
 async function loadOrders(){
   const { data, error } = await sb.from('orders').select('*').order('placed_at', {ascending:false});
@@ -721,7 +774,7 @@ function showScreen(name){
   if(name==='order'){ renderCartBar(); }
   else { bar.classList.add('hidden'); }
   if(name==='cart') renderCart();
-  if(name==='dashboard') renderDashboard();
+  if(name==='dashboard') showDashboardScreen();
   window.scrollTo(0,0);
 }
 
