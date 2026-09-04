@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avisekh Bekary — Owner Dashboard</title>
+<style>
+  :root{
+    --cream:#FFF8EF;
+    --cream-dark:#FBEEDD;
+    --brown:#5C3A21;
+    --brown-dark:#3E2712;
+    --terracotta:#D97B4F;
+    --terracotta-dark:#B85E36;
+    --green:#4C8B5C;
+    --line:#EAD9C4;
+    --white:#FFFFFF;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--cream);
+    color:var(--brown-dark);
+    padding-bottom:40px;
+  }
+  header.top{
+    background:var(--brown);
+    color:var(--cream);
+    padding:16px;
+    text-align:center;
+    border-bottom:4px solid var(--terracotta);
+  }
+  header.top h1{margin:0 0 4px;font-size:1.3rem;}
+  header.top p{margin:0;font-size:0.85rem;opacity:0.9;}
+  main{padding:14px 14px 20px;max-width:640px;margin:0 auto;}
+  .btn{
+    border:none;border-radius:10px;padding:10px 14px;font-size:0.92rem;font-weight:700;
+    cursor:pointer;
+  }
+  .btn.primary{background:var(--terracotta);color:white;}
+  .btn.primary:active{background:var(--terracotta-dark);}
+  .btn.outline{background:white;border:1.5px solid var(--terracotta);color:var(--terracotta-dark);}
+  .btn.full{width:100%;}
+  .btn.small{padding:6px 10px;font-size:0.82rem;}
+  .disclaimer{
+    background:#FBEAD9;border:1px solid var(--terracotta);border-radius:10px;
+    padding:10px 12px;font-size:0.82rem;color:var(--brown-dark);margin:10px 0 4px;
+  }
+  .empty-msg{text-align:center;color:#8a6a4d;padding:40px 10px;}
+  .status-col{margin-bottom:20px;}
+  .status-title{
+    font-weight:800;background:var(--brown);color:white;padding:6px 12px;border-radius:20px;
+    display:inline-block;font-size:0.85rem;margin-bottom:10px;
+  }
+  .order-card{
+    background:white;border:1px solid var(--line);border-radius:12px;padding:10px 12px;
+    margin-bottom:10px;font-size:0.85rem;
+  }
+  .order-card .items{margin:6px 0;padding-left:16px;}
+  .order-card .actions{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;}
+  a.wa-link{color:var(--green);font-weight:700;text-decoration:none;}
+  form label{display:block;font-weight:600;margin:10px 0 4px;font-size:0.9rem;}
+  form input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);font-size:0.95rem;}
+  #orderSearchInput{
+    width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);
+    margin-bottom:14px;font-size:0.95rem;
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>👩‍🍳 Avisekh Bekary — Owner Dashboard</h1>
+  <p>Staff / owner access only</p>
+</header>
+
+<main>
+  <div id="loginBox">
+    <div class="disclaimer">This area is for the bakery owner only. Please log in.</div>
+    <form onsubmit="return ownerLogin(event)">
+      <label>Email</label>
+      <input type="email" id="ownerEmail" required>
+      <label>Password</label>
+      <input type="password" id="ownerPassword" required>
+      <div id="loginError" style="color:#B00020;font-size:0.85rem;margin-top:8px;"></div>
+      <button type="submit" class="btn primary full" style="margin-top:14px;">Log In</button>
+    </form>
+  </div>
+
+  <div id="dashboardBox" style="display:none;">
+    <button class="btn outline" style="margin-bottom:12px;" onclick="ownerLogout()">Log Out</button>
+    <div class="disclaimer">
+      Orders here are shared across all devices (saved online via Supabase). This page doesn't send you an automatic alert (like SMS or push notification) when a new order comes in — tap "Refresh Orders" below to check, or ask customers to also message you on WhatsApp.
+    </div>
+    <input type="text" id="orderSearchInput" placeholder="Search by Order ID, name, or phone…" oninput="filterDashboardOrders()">
+    <div id="dashboardContent"></div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ================= SUPABASE SETUP ================= */
+const SUPABASE_URL = "https://makoyqtelhqemvyabvxs.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ha295cXRlbGhxZW12eWFidnhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0MDI3NzgsImV4cCI6MjEwMzk3ODc3OH0.4VjPjWWav5vBWI5klAPb24NiHPXDQPoioOxJL3yHPoc";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ================= OWNER AUTH ================= */
+async function ownerLogin(e){
+  e.preventDefault();
+  const email = document.getElementById('ownerEmail').value.trim();
+  const password = document.getElementById('ownerPassword').value;
+  const errBox = document.getElementById('loginError');
+  errBox.textContent = "";
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){
+    errBox.textContent = "Login failed: " + error.message;
+    return false;
+  }
+  await showDashboardScreen();
+  return false;
+}
+async function ownerLogout(){
+  await sb.auth.signOut();
+  document.getElementById('ownerPassword').value = "";
+  showDashboardScreen();
+}
+async function showDashboardScreen(){
+  const { data: { session } } = await sb.auth.getSession();
+  const loginBox = document.getElementById('loginBox');
+  const dashBox = document.getElementById('dashboardBox');
+  if(session){
+    loginBox.style.display = 'none';
+    dashBox.style.display = 'block';
+    const searchBox = document.getElementById('orderSearchInput');
+    if(searchBox) searchBox.value = "";
+    renderDashboard();
+  } else {
+    loginBox.style.display = 'block';
+    dashBox.style.display = 'none';
+  }
+}
+
+/* ================= ORDERS / DASHBOARD (Supabase-backed) ================= */
+async function loadOrders(){
+  const { data, error } = await sb.from('orders').select('*').order('placed_at', {ascending:false});
+  if(error){ console.error(error); return null; }
+  return data;
+}
+async function updateOrderStatus(id, newStatus){
+  const { error } = await sb.from('orders').update({status:newStatus}).eq('id', id);
+  if(error){ alert("Couldn't update status — check your internet connection and try again."); console.error(error); return; }
+  renderDashboard();
+}
+const STATUS_FLOW = ["New","Baking","Ready","Picked Up"];
+let allOrdersCache = [];
+
+async function renderDashboard(){
+  const content = document.getElementById('dashboardContent');
+  content.innerHTML = `<div class="empty-msg">Loading orders…</div>`;
+  const orders = await loadOrders();
+  content.innerHTML = "";
+  if(orders === null){
+    content.innerHTML = `<div class="empty-msg">Couldn't load orders. Check your internet connection and tap Refresh.</div>
+      <button class="btn outline full" onclick="renderDashboard()">Refresh</button>`;
+    return;
+  }
+  allOrdersCache = orders;
+  content.innerHTML = `<button class="btn outline full" style="margin-bottom:14px;" onclick="renderDashboard()">🔄 Refresh Orders</button>`;
+  const searchBox = document.getElementById('orderSearchInput');
+  const query = searchBox ? searchBox.value.trim().toLowerCase() : "";
+  const filtered = query ? orders.filter(o=>
+    o.id.toLowerCase().includes(query) ||
+    (o.name||"").toLowerCase().includes(query) ||
+    (o.phone||"").toLowerCase().includes(query)
+  ) : orders;
+
+  if(orders.length === 0){
+    content.innerHTML += `<div class="empty-msg">No orders yet.</div>`;
+    return;
+  }
+  if(filtered.length === 0){
+    content.innerHTML += `<div class="empty-msg">No orders match your search.</div>`;
+    return;
+  }
+  renderOrderColumns(content, filtered);
+}
+
+function filterDashboardOrders(){
+  const content = document.getElementById('dashboardContent');
+  const refreshBtn = content.querySelector('button.outline') ? content.querySelector('button.outline').outerHTML : `<button class="btn outline full" style="margin-bottom:14px;" onclick="renderDashboard()">🔄 Refresh Orders</button>`;
+  const searchBox = document.getElementById('orderSearchInput');
+  const query = searchBox.value.trim().toLowerCase();
+  const filtered = query ? allOrdersCache.filter(o=>
+    o.id.toLowerCase().includes(query) ||
+    (o.name||"").toLowerCase().includes(query) ||
+    (o.phone||"").toLowerCase().includes(query)
+  ) : allOrdersCache;
+  content.innerHTML = refreshBtn;
+  if(allOrdersCache.length === 0){
+    content.innerHTML += `<div class="empty-msg">No orders yet.</div>`;
+    return;
+  }
+  if(filtered.length === 0){
+    content.innerHTML += `<div class="empty-msg">No orders match your search.</div>`;
+    return;
+  }
+  renderOrderColumns(content, filtered);
+}
+
+function renderOrderColumns(content, orders){
+  STATUS_FLOW.forEach(status=>{
+    const group = orders.filter(o=>o.status===status);
+    const col = document.createElement('div');
+    col.className = 'status-col';
+    const titleEmoji = {"New":"🆕","Baking":"🔥","Ready":"✅","Picked Up":"📦"}[status];
+    col.innerHTML = `<div class="status-title">${titleEmoji} ${status} (${group.length})</div>`;
+    if(group.length === 0){
+      col.innerHTML += `<div class="note-line">No orders here.</div>`;
+    }
+    group.forEach(o=>{
+      const card = document.createElement('div');
+      card.className = 'order-card';
+      let itemsHtml = (o.items||[]).map(c=>{
+        let d = `${c.name} × ${c.qty}`;
+        if(c.type==="Made-to-order") d += ` (pickup ${c.pickupDate}, ${c.pickupTime})`;
+        return `<li>${d}</li>`;
+      }).join("");
+      const nextIdx = STATUS_FLOW.indexOf(status)+1;
+      const nextStatus = STATUS_FLOW[nextIdx];
+      card.innerHTML = `
+        <b>${o.id}</b> — ${o.name} (<a class="wa-link" href="https://wa.me/91${o.phone}" target="_blank">${o.phone}</a>)<br>
+        <ul class="items">${itemsHtml}</ul>
+        Total: ₹${o.total} · Payment: ${o.pay}
+        ${o.note ? "<br>Note: "+o.note : ""}
+        <div class="actions">
+          ${nextStatus ? `<button class="btn primary small" onclick="updateOrderStatus('${o.id}','${nextStatus}')">Move to ${nextStatus}</button>` : ""}
+        </div>
+      `;
+      col.appendChild(card);
+    });
+    content.appendChild(col);
+  });
+}
+
+/* ================= INIT ================= */
+showDashboardScreen();
+</script>
+</body>
+</html>
