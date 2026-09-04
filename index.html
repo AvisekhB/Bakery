@@ -43,7 +43,7 @@
     border-bottom:1px solid var(--line);
   }
   nav.tabs button{
-    flex:1;padding:12px;border:none;background:transparent;font-size:0.95rem;
+    flex:1;padding:12px 4px;border:none;background:transparent;font-size:0.78rem;
     font-weight:600;color:var(--brown);cursor:pointer;
   }
   nav.tabs button.active{background:var(--terracotta);color:white;}
@@ -169,6 +169,7 @@
 
 <nav class="tabs">
   <button id="tabOrderBtn" class="active" onclick="showScreen('order')">🛒 Order</button>
+  <button id="tabTrackBtn" onclick="showScreen('track')">📦 Track Order</button>
   <button id="tabDashBtn" onclick="showScreen('dashboard')">👩‍🍳 Owner Dashboard</button>
 </nav>
 
@@ -227,7 +228,22 @@
         Your order is saved online, but the bakery won't get an automatic alert — please also message us on WhatsApp (9999999999) to confirm.
       </div>
       <button class="btn primary full" style="margin-top:16px;" onclick="showScreen('order')">Order More / Done</button>
+      <button class="btn outline full" style="margin-top:10px;" onclick="goToTrackFromConfirm()">Track This Order</button>
     </div>
+  </main>
+</div>
+
+<!-- TRACK ORDER SCREEN -->
+<div id="screen-track" class="screen">
+  <main>
+    <h2 style="color:var(--brown)">Track Your Order</h2>
+    <div class="disclaimer">Enter your Order ID (shown on your confirmation screen) to see its live status.</div>
+    <label style="font-weight:600;display:block;margin:10px 0 4px;">Order ID</label>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="trackOrderId" placeholder="e.g. AVB123456" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--line);text-transform:uppercase;">
+      <button class="btn primary" onclick="startTrackPolling()">Check</button>
+    </div>
+    <div id="trackResult" style="margin-top:18px;"></div>
   </main>
 </div>
 
@@ -253,6 +269,9 @@
       <div class="disclaimer">
         Orders here are shared across all devices (saved online via Supabase). This page still doesn't send you an automatic alert (like SMS or push notification) when a new order comes in — tap "Refresh Orders" below to check, or ask customers to also message you on WhatsApp.
       </div>
+      <input type="text" id="orderSearchInput" placeholder="Search by Order ID, name, or phone…"
+        style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);margin-bottom:14px;font-size:0.95rem;"
+        oninput="filterDashboardOrders()">
       <div id="dashboardContent"></div>
     </div>
   </main>
@@ -587,11 +606,11 @@ function submitOrder(e){
   submitBtn.disabled = true;
   submitBtn.textContent = "Placing order...";
 
-  saveOrder(order).then(success=>{
+  saveOrder(order).then(result=>{
     submitBtn.disabled = false;
     submitBtn.textContent = "Place Order";
-    if(!success){
-      alert("Sorry, we couldn't save your order online right now. Please try again, or just message us directly on WhatsApp: 9999999999.");
+    if(!result.success){
+      alert("Sorry, we couldn't save your order online right now (" + result.errorMsg + "). Please try again, or just message us directly on WhatsApp: 9999999999.");
       return;
     }
     showConfirmation(order);
@@ -604,6 +623,7 @@ function submitOrder(e){
 
 function showConfirmation(order){
   document.getElementById('confOrderId').textContent = "Order ID: " + order.id;
+  localStorage.setItem('avisekh_last_order_id', order.id);
   const summary = document.getElementById('confSummary');
   let html = "";
   order.items.forEach(c=>{
@@ -663,6 +683,70 @@ function drawOrderCode(text){
   });
 }
 
+/* ================= TRACK ORDER (customer, live) ================= */
+let trackPollTimer = null;
+
+function goToTrackFromConfirm(){
+  showScreen('track');
+}
+
+function stopTrackPolling(){
+  if(trackPollTimer){ clearInterval(trackPollTimer); trackPollTimer = null; }
+}
+
+function startTrackPolling(){
+  stopTrackPolling();
+  checkOrderStatusOnce();
+  trackPollTimer = setInterval(checkOrderStatusOnce, 8000);
+}
+
+const STATUS_DESC = {
+  "New": "We've received your order and will start on it soon.",
+  "Baking": "Your order is being prepared right now!",
+  "Ready": "Your order is ready — come on over for pickup!",
+  "Picked Up": "This order has been picked up. Thanks for ordering!"
+};
+const STATUS_ICON = {"New":"🆕","Baking":"🔥","Ready":"✅","Picked Up":"📦"};
+
+async function checkOrderStatusOnce(){
+  const box = document.getElementById('trackResult');
+  const idInput = document.getElementById('trackOrderId').value.trim().toUpperCase();
+  if(!idInput){
+    box.innerHTML = `<div class="empty-msg">Enter your Order ID above.</div>`;
+    stopTrackPolling();
+    return;
+  }
+  const { data, error } = await sb.rpc('get_order_status', { p_order_id: idInput });
+  if(error){
+    box.innerHTML = `<div class="empty-msg">Couldn't check status right now. Check your internet connection.</div>`;
+    return;
+  }
+  if(!data || data.length === 0){
+    box.innerHTML = `<div class="empty-msg">No order found with that ID. Please check and try again.</div>`;
+    stopTrackPolling();
+    return;
+  }
+  const o = data[0];
+  let itemsHtml = (o.items||[]).map(c=>{
+    let d = `${c.name} × ${c.qty}`;
+    if(c.type==="Made-to-order") d += ` (pickup ${c.pickupDate}, ${c.pickupTime})`;
+    return `<li>${d}</li>`;
+  }).join("");
+  box.innerHTML = `
+    <div class="conf-box" style="text-align:left;">
+      <div style="text-align:center;font-size:2rem;">${STATUS_ICON[o.status]||"📦"}</div>
+      <div style="text-align:center;font-weight:800;font-size:1.2rem;color:var(--brown);margin:6px 0;">${o.status}</div>
+      <div style="text-align:center;" class="note-line">${STATUS_DESC[o.status]||""}</div>
+      <div class="summary-list">
+        <div class="line"><b>Order ID:</b> ${o.id}</div>
+        <ul class="items">${itemsHtml}</ul>
+        <div class="line"><b>Total:</b> ₹${o.total}</div>
+      </div>
+      <div class="note-line" style="text-align:center;margin-top:8px;">Auto-refreshing every few seconds…</div>
+    </div>
+  `;
+}
+
 /* ================= OWNER AUTH ================= */
 async function ownerLogin(e){
   e.preventDefault();
@@ -690,6 +774,8 @@ async function showDashboardScreen(){
   if(session){
     loginBox.style.display = 'none';
     dashBox.style.display = 'block';
+    const searchBox = document.getElementById('orderSearchInput');
+    if(searchBox) searchBox.value = "";
     renderDashboard();
   } else {
     loginBox.style.display = 'block';
@@ -705,8 +791,8 @@ async function loadOrders(){
 }
 async function saveOrder(order){
   const { error } = await sb.from('orders').insert([order]);
-  if(error){ console.error(error); return false; }
-  return true;
+  if(error){ console.error(error); return {success:false, errorMsg: error.message}; }
+  return {success:true};
 }
 async function updateOrderStatus(id, newStatus){
   const { error } = await sb.from('orders').update({status:newStatus}).eq('id', id);
@@ -714,6 +800,7 @@ async function updateOrderStatus(id, newStatus){
   renderDashboard();
 }
 const STATUS_FLOW = ["New","Baking","Ready","Picked Up"];
+let allOrdersCache = [];
 
 async function renderDashboard(){
   const content = document.getElementById('dashboardContent');
@@ -725,11 +812,50 @@ async function renderDashboard(){
       <button class="btn outline full" onclick="renderDashboard()">Refresh</button>`;
     return;
   }
+  allOrdersCache = orders;
   content.innerHTML = `<button class="btn outline full" style="margin-bottom:14px;" onclick="renderDashboard()">🔄 Refresh Orders</button>`;
+  const searchBox = document.getElementById('orderSearchInput');
+  const query = searchBox ? searchBox.value.trim().toLowerCase() : "";
+  const filtered = query ? orders.filter(o=>
+    o.id.toLowerCase().includes(query) ||
+    (o.name||"").toLowerCase().includes(query) ||
+    (o.phone||"").toLowerCase().includes(query)
+  ) : orders;
+
   if(orders.length === 0){
     content.innerHTML += `<div class="empty-msg">No orders yet.</div>`;
     return;
   }
+  if(filtered.length === 0){
+    content.innerHTML += `<div class="empty-msg">No orders match your search.</div>`;
+    return;
+  }
+  renderOrderColumns(content, filtered);
+}
+
+function filterDashboardOrders(){
+  const content = document.getElementById('dashboardContent');
+  const refreshBtn = content.querySelector('button.outline') ? content.querySelector('button.outline').outerHTML : `<button class="btn outline full" style="margin-bottom:14px;" onclick="renderDashboard()">🔄 Refresh Orders</button>`;
+  const searchBox = document.getElementById('orderSearchInput');
+  const query = searchBox.value.trim().toLowerCase();
+  const filtered = query ? allOrdersCache.filter(o=>
+    o.id.toLowerCase().includes(query) ||
+    (o.name||"").toLowerCase().includes(query) ||
+    (o.phone||"").toLowerCase().includes(query)
+  ) : allOrdersCache;
+  content.innerHTML = refreshBtn;
+  if(allOrdersCache.length === 0){
+    content.innerHTML += `<div class="empty-msg">No orders yet.</div>`;
+    return;
+  }
+  if(filtered.length === 0){
+    content.innerHTML += `<div class="empty-msg">No orders match your search.</div>`;
+    return;
+  }
+  renderOrderColumns(content, filtered);
+}
+
+function renderOrderColumns(content, orders){
   STATUS_FLOW.forEach(status=>{
     const group = orders.filter(o=>o.status===status);
     const col = document.createElement('div');
@@ -769,12 +895,23 @@ function showScreen(name){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-'+name).classList.add('active');
   document.getElementById('tabOrderBtn').classList.toggle('active', name==='order');
+  document.getElementById('tabTrackBtn').classList.toggle('active', name==='track');
   document.getElementById('tabDashBtn').classList.toggle('active', name==='dashboard');
   const bar = document.getElementById('cartBar');
   if(name==='order'){ renderCartBar(); }
   else { bar.classList.add('hidden'); }
   if(name==='cart') renderCart();
   if(name==='dashboard') showDashboardScreen();
+
+  if(name==='track'){
+    const lastId = localStorage.getItem('avisekh_last_order_id');
+    if(lastId && !document.getElementById('trackOrderId').value){
+      document.getElementById('trackOrderId').value = lastId;
+    }
+    startTrackPolling();
+  } else {
+    stopTrackPolling();
+  }
   window.scrollTo(0,0);
 }
 
