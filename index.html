@@ -170,12 +170,18 @@
 <nav class="tabs">
   <button id="tabOrderBtn" class="active" onclick="showScreen('order')">🛒 Order</button>
   <button id="tabTrackBtn" onclick="showScreen('track')">📦 Track Order</button>
-  <button id="tabDashBtn" onclick="showScreen('dashboard')">👩‍🍳 Owner Dashboard</button>
 </nav>
 
 <!-- ORDER SCREEN -->
 <div id="screen-order" class="screen active">
-  <main id="menuMain"></main>
+  <main>
+    <div id="shopClosedBanner" style="display:none;" class="disclaimer">
+      🚫 <b>We're currently closed for new orders.</b> <span id="shopClosedNote"></span>
+    </div>
+    <input type="text" id="menuSearchInput" placeholder="🔍 Search the menu…" oninput="filterMenu()"
+      style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);margin-bottom:6px;font-size:0.95rem;">
+    <div id="menuMain"></div>
+  </main>
 </div>
 
 <!-- CART SCREEN -->
@@ -244,36 +250,6 @@
       <button class="btn primary" onclick="startTrackPolling()">Check</button>
     </div>
     <div id="trackResult" style="margin-top:18px;"></div>
-  </main>
-</div>
-
-<!-- DASHBOARD SCREEN -->
-<div id="screen-dashboard" class="screen">
-  <main>
-    <h2 style="color:var(--brown)">Owner Dashboard</h2>
-
-    <div id="loginBox">
-      <div class="disclaimer">This area is for the bakery owner only. Please log in.</div>
-      <form onsubmit="return ownerLogin(event)">
-        <label style="font-weight:600;display:block;margin:10px 0 4px;">Email</label>
-        <input type="email" id="ownerEmail" required style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);">
-        <label style="font-weight:600;display:block;margin:10px 0 4px;">Password</label>
-        <input type="password" id="ownerPassword" required style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);">
-        <div id="loginError" style="color:#B00020;font-size:0.85rem;margin-top:8px;"></div>
-        <button type="submit" class="btn primary full" style="margin-top:14px;">Log In</button>
-      </form>
-    </div>
-
-    <div id="dashboardBox" style="display:none;">
-      <button class="btn outline" style="margin-bottom:12px;" onclick="ownerLogout()">Log Out</button>
-      <div class="disclaimer">
-        Orders here are shared across all devices (saved online via Supabase). This page still doesn't send you an automatic alert (like SMS or push notification) when a new order comes in — tap "Refresh Orders" below to check, or ask customers to also message you on WhatsApp.
-      </div>
-      <input type="text" id="orderSearchInput" placeholder="Search by Order ID, name, or phone…"
-        style="width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);margin-bottom:14px;font-size:0.95rem;"
-        oninput="filterDashboardOrders()">
-      <div id="dashboardContent"></div>
-    </div>
   </main>
 </div>
 
@@ -416,17 +392,29 @@ function renderCartBar(){
 function renderMenu(){
   const main = document.getElementById('menuMain');
   main.innerHTML = "";
-  const categories = [...new Set(ITEMS.map(i=>i.category))];
+  const query = (document.getElementById('menuSearchInput')?.value || "").trim().toLowerCase();
+  const visibleItems = query ? ITEMS.filter(i=>i.name.toLowerCase().includes(query)) : ITEMS;
+
+  if(query && visibleItems.length === 0){
+    main.innerHTML = `<div class="empty-msg">No items match "${query}". Try a different search.</div>`;
+    return;
+  }
+
+  const categories = [...new Set(visibleItems.map(i=>i.category))];
   categories.forEach(cat=>{
     const title = document.createElement('div');
     title.className = 'category-title';
     title.textContent = (EMOJI[cat]||"🍽️") + " " + cat;
     main.appendChild(title);
 
-    ITEMS.filter(i=>i.category===cat).forEach((item, idx)=>{
+    visibleItems.filter(i=>i.category===cat).forEach((item, idx)=>{
       main.appendChild(renderItemCard(item, cat+"-"+idx));
     });
   });
+}
+
+function filterMenu(){
+  renderMenu();
 }
 
 function eggTagText(e){
@@ -747,43 +735,7 @@ async function checkOrderStatusOnce(){
   `;
 }
 
-/* ================= OWNER AUTH ================= */
-async function ownerLogin(e){
-  e.preventDefault();
-  const email = document.getElementById('ownerEmail').value.trim();
-  const password = document.getElementById('ownerPassword').value;
-  const errBox = document.getElementById('loginError');
-  errBox.textContent = "";
-  const { error } = await sb.auth.signInWithPassword({ email, password });
-  if(error){
-    errBox.textContent = "Login failed: " + error.message;
-    return false;
-  }
-  await showDashboardScreen();
-  return false;
-}
-async function ownerLogout(){
-  await sb.auth.signOut();
-  document.getElementById('ownerPassword').value = "";
-  showDashboardScreen();
-}
-async function showDashboardScreen(){
-  const { data: { session } } = await sb.auth.getSession();
-  const loginBox = document.getElementById('loginBox');
-  const dashBox = document.getElementById('dashboardBox');
-  if(session){
-    loginBox.style.display = 'none';
-    dashBox.style.display = 'block';
-    const searchBox = document.getElementById('orderSearchInput');
-    if(searchBox) searchBox.value = "";
-    renderDashboard();
-  } else {
-    loginBox.style.display = 'block';
-    dashBox.style.display = 'none';
-  }
-}
-
-/* ================= ORDERS / DASHBOARD (Supabase-backed) ================= */
+/* ================= ORDERS (Supabase-backed, customer side) ================= */
 async function loadOrders(){
   const { data, error } = await sb.from('orders').select('*').order('placed_at', {ascending:false});
   if(error){ console.error(error); return null; }
@@ -794,101 +746,6 @@ async function saveOrder(order){
   if(error){ console.error(error); return {success:false, errorMsg: error.message}; }
   return {success:true};
 }
-async function updateOrderStatus(id, newStatus){
-  const { error } = await sb.from('orders').update({status:newStatus}).eq('id', id);
-  if(error){ alert("Couldn't update status — check your internet connection and try again."); console.error(error); return; }
-  renderDashboard();
-}
-const STATUS_FLOW = ["New","Baking","Ready","Picked Up"];
-let allOrdersCache = [];
-
-async function renderDashboard(){
-  const content = document.getElementById('dashboardContent');
-  content.innerHTML = `<div class="empty-msg">Loading orders…</div>`;
-  const orders = await loadOrders();
-  content.innerHTML = "";
-  if(orders === null){
-    content.innerHTML = `<div class="empty-msg">Couldn't load orders. Check your internet connection and tap Refresh.</div>
-      <button class="btn outline full" onclick="renderDashboard()">Refresh</button>`;
-    return;
-  }
-  allOrdersCache = orders;
-  content.innerHTML = `<button class="btn outline full" style="margin-bottom:14px;" onclick="renderDashboard()">🔄 Refresh Orders</button>`;
-  const searchBox = document.getElementById('orderSearchInput');
-  const query = searchBox ? searchBox.value.trim().toLowerCase() : "";
-  const filtered = query ? orders.filter(o=>
-    o.id.toLowerCase().includes(query) ||
-    (o.name||"").toLowerCase().includes(query) ||
-    (o.phone||"").toLowerCase().includes(query)
-  ) : orders;
-
-  if(orders.length === 0){
-    content.innerHTML += `<div class="empty-msg">No orders yet.</div>`;
-    return;
-  }
-  if(filtered.length === 0){
-    content.innerHTML += `<div class="empty-msg">No orders match your search.</div>`;
-    return;
-  }
-  renderOrderColumns(content, filtered);
-}
-
-function filterDashboardOrders(){
-  const content = document.getElementById('dashboardContent');
-  const refreshBtn = content.querySelector('button.outline') ? content.querySelector('button.outline').outerHTML : `<button class="btn outline full" style="margin-bottom:14px;" onclick="renderDashboard()">🔄 Refresh Orders</button>`;
-  const searchBox = document.getElementById('orderSearchInput');
-  const query = searchBox.value.trim().toLowerCase();
-  const filtered = query ? allOrdersCache.filter(o=>
-    o.id.toLowerCase().includes(query) ||
-    (o.name||"").toLowerCase().includes(query) ||
-    (o.phone||"").toLowerCase().includes(query)
-  ) : allOrdersCache;
-  content.innerHTML = refreshBtn;
-  if(allOrdersCache.length === 0){
-    content.innerHTML += `<div class="empty-msg">No orders yet.</div>`;
-    return;
-  }
-  if(filtered.length === 0){
-    content.innerHTML += `<div class="empty-msg">No orders match your search.</div>`;
-    return;
-  }
-  renderOrderColumns(content, filtered);
-}
-
-function renderOrderColumns(content, orders){
-  STATUS_FLOW.forEach(status=>{
-    const group = orders.filter(o=>o.status===status);
-    const col = document.createElement('div');
-    col.className = 'status-col';
-    const titleEmoji = {"New":"🆕","Baking":"🔥","Ready":"✅","Picked Up":"📦"}[status];
-    col.innerHTML = `<div class="status-title">${titleEmoji} ${status} (${group.length})</div>`;
-    if(group.length === 0){
-      col.innerHTML += `<div class="note-line">No orders here.</div>`;
-    }
-    group.forEach(o=>{
-      const card = document.createElement('div');
-      card.className = 'order-card';
-      let itemsHtml = o.items.map(c=>{
-        let d = `${c.name} × ${c.qty}`;
-        if(c.type==="Made-to-order") d += ` (pickup ${c.pickupDate}, ${c.pickupTime})`;
-        return `<li>${d}</li>`;
-      }).join("");
-      const nextIdx = STATUS_FLOW.indexOf(status)+1;
-      const nextStatus = STATUS_FLOW[nextIdx];
-      card.innerHTML = `
-        <b>${o.id}</b> — ${o.name} (<a class="wa-link" href="https://wa.me/91${o.phone}" target="_blank">${o.phone}</a>)<br>
-        <ul class="items">${itemsHtml}</ul>
-        Total: ₹${o.total} · Payment: ${o.pay}
-        ${o.note ? "<br>Note: "+o.note : ""}
-        <div class="actions">
-          ${nextStatus ? `<button class="btn primary small" onclick="updateOrderStatus('${o.id}','${nextStatus}')">Move to ${nextStatus}</button>` : ""}
-        </div>
-      `;
-      col.appendChild(card);
-    });
-    content.appendChild(col);
-  });
-}
 
 /* ================= NAVIGATION ================= */
 function showScreen(name){
@@ -896,12 +753,10 @@ function showScreen(name){
   document.getElementById('screen-'+name).classList.add('active');
   document.getElementById('tabOrderBtn').classList.toggle('active', name==='order');
   document.getElementById('tabTrackBtn').classList.toggle('active', name==='track');
-  document.getElementById('tabDashBtn').classList.toggle('active', name==='dashboard');
   const bar = document.getElementById('cartBar');
   if(name==='order'){ renderCartBar(); }
   else { bar.classList.add('hidden'); }
   if(name==='cart') renderCart();
-  if(name==='dashboard') showDashboardScreen();
 
   if(name==='track'){
     const lastId = localStorage.getItem('avisekh_last_order_id');
