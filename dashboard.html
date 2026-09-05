@@ -62,6 +62,22 @@
   .btn.primary:hover { background: var(--terracotta-dark); }
   .btn.outline { background: white; border: 1.5px solid var(--brown); color: var(--brown); }
   .btn.danger { background: var(--red); color: white; }
+
+  .shop-status-banner {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; border: 1px solid var(--line);
+  }
+  .shop-status-banner.open { background: #E8F5E9; border-color: var(--green); }
+  .shop-status-banner.closed { background: #FDECEA; border-color: var(--red); }
+  .shop-status-text { font-weight: 800; font-size: 1.05rem; }
+  .shop-status-banner.open .shop-status-text { color: var(--green); }
+  .shop-status-banner.closed .shop-status-text { color: var(--red); }
+  .shop-status-sub { font-size: 0.8rem; color: #8a6a4d; margin-top: 2px; font-weight: 400; }
+  .shop-status-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .shop-status-controls input[type="text"] {
+    padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); font-size: 0.85rem;
+    min-width: 220px;
+  }
   
   .info-banner {
     background: #FBEAD9; border: 1px solid var(--terracotta);
@@ -115,6 +131,68 @@
   .loading { text-align: center; padding: 20px; color: var(--brown); }
   
   .hidden { display: none !important; }
+
+  /* Tabs */
+  .tab-bar {
+    display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid var(--line);
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    border: none; background: none; padding: 10px 16px; font-size: 0.95rem;
+    font-weight: 700; color: #8a6a4d; cursor: pointer; border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+  }
+  .tab-btn.active { color: var(--terracotta-dark); border-bottom-color: var(--terracotta); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Customer Cards */
+  .customer-card {
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+  }
+  .customer-name { font-weight: 800; color: var(--brown); font-size: 1.05rem; }
+  .customer-meta { font-size: 0.85rem; color: #8a6a4d; margin-top: 4px; }
+  .customer-stats { text-align: right; }
+  .customer-stats .stat-total { font-weight: 700; color: var(--terracotta-dark); font-size: 1.05rem; }
+  .customer-stats .stat-orders { font-size: 0.8rem; color: #8a6a4d; }
+  .search-bar {
+    width: 100%; padding: 10px 14px; margin-bottom: 16px;
+    border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem;
+  }
+
+  /* Inventory */
+  .inventory-form {
+    background: var(--white); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px; margin-bottom: 20px;
+  }
+  .inventory-form h3 { margin-top: 0; color: var(--brown); font-size: 1rem; }
+  .form-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;
+  }
+  .form-grid input, .form-grid select {
+    padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem;
+    width: 100%;
+  }
+  .inventory-card {
+    background: var(--white); border: 1px solid var(--line); border-left: 5px solid var(--green);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+  }
+  .inventory-card.low-stock { border-left-color: var(--red); }
+  .inventory-name { font-weight: 800; color: var(--brown); }
+  .inventory-meta { font-size: 0.8rem; color: #8a6a4d; margin-top: 2px; }
+  .stock-badge {
+    font-weight: 700; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem;
+    background: #E8F5E9; color: var(--green);
+  }
+  .stock-badge.low { background: #FDECEA; color: var(--red); }
+  .inventory-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .qty-input {
+    width: 70px; padding: 6px; border: 1px solid var(--line); border-radius: 6px; text-align: center;
+  }
+  .btn.small { padding: 6px 10px; font-size: 0.8rem; }
 </style>
 </head>
 <body>
@@ -142,17 +220,78 @@
       </div>
     </header>
 
+    <div class="shop-status-banner" id="shopStatusBanner">
+      <div>
+        <div class="shop-status-text" id="shopStatusText">Loading shop status...</div>
+        <div class="shop-status-sub">Customers will see this on the ordering site the moment you change it.</div>
+      </div>
+      <div class="shop-status-controls">
+        <input type="text" id="closedMessageInput" placeholder="Message shown to customers when closed">
+        <button class="btn" id="shopToggleBtn" onclick="toggleShopStatus()">...</button>
+      </div>
+    </div>
+
     <div class="info-banner">
       ⚠️ <b>Note:</b> Orders here are shared across all devices (saved online via Supabase). This page doesn't send you an automatic alert (like SMS or push notification) when a new order comes in — tap "Refresh Orders" below to check, or ask customers to also message you on WhatsApp.
     </div>
 
-    <div class="controls" style="margin-bottom: 20px;">
-      <button class="btn primary" onclick="fetchOrders()">🔄 Refresh Orders</button>
-      <span id="lastRefreshed" style="font-size:0.8rem; color:#8a6a4d; margin-left:auto;"></span>
+    <!-- TABS -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tabBtn-orders" onclick="switchTab('orders')">📦 Orders</button>
+      <button class="tab-btn" id="tabBtn-customers" onclick="switchTab('customers')">👥 Customers</button>
+      <button class="tab-btn" id="tabBtn-inventory" onclick="switchTab('inventory')">🧺 Inventory</button>
     </div>
 
-    <div id="ordersContainer">
-      <div class="loading">Loading orders...</div>
+    <!-- ORDERS PANEL -->
+    <div id="tabPanel-orders" class="tab-panel active">
+      <div class="controls" style="margin-bottom: 20px;">
+        <button class="btn primary" onclick="fetchOrders()">🔄 Refresh Orders</button>
+        <span id="lastRefreshed" style="font-size:0.8rem; color:#8a6a4d; margin-left:auto;"></span>
+      </div>
+
+      <div id="ordersContainer">
+        <div class="loading">Loading orders...</div>
+      </div>
+    </div>
+
+    <!-- CUSTOMERS PANEL -->
+    <div id="tabPanel-customers" class="tab-panel">
+      <div class="controls" style="margin-bottom: 16px;">
+        <button class="btn primary" onclick="fetchOrders()">🔄 Refresh Data</button>
+        <span style="font-size:0.8rem; color:#8a6a4d; margin-left:auto;">Built from your order history</span>
+      </div>
+      <input type="text" class="search-bar" id="customerSearch" placeholder="🔎 Search customers by name or phone..." oninput="renderCustomers()">
+      <div id="customersContainer">
+        <div class="loading">Loading customers...</div>
+      </div>
+    </div>
+
+    <!-- INVENTORY PANEL -->
+    <div id="tabPanel-inventory" class="tab-panel">
+      <div class="info-banner">
+        🧺 Track your stock levels here. This is separate from your menu — add each ingredient or product you want to monitor.
+      </div>
+
+      <div class="inventory-form">
+        <h3>➕ Add Inventory Item</h3>
+        <div class="form-grid">
+          <input type="text" id="invName" placeholder="Item name (e.g. Maida / Butter Croissant)">
+          <input type="text" id="invCategory" placeholder="Category (e.g. Raw Material / Pastries)">
+          <input type="number" id="invStock" placeholder="Current stock" min="0" step="0.01">
+          <input type="text" id="invUnit" placeholder="Unit (kg, pieces, litres...)">
+          <input type="number" id="invThreshold" placeholder="Low stock alert level" min="0" step="0.01">
+        </div>
+        <button class="btn primary" onclick="addInventoryItem()">Add Item</button>
+      </div>
+
+      <div class="controls" style="margin-bottom: 16px;">
+        <button class="btn outline" onclick="fetchInventory()">🔄 Refresh Inventory</button>
+        <span id="inventorySummary" style="font-size:0.85rem; color:#8a6a4d; margin-left:auto;"></span>
+      </div>
+
+      <div id="inventoryContainer">
+        <div class="loading">Loading inventory...</div>
+      </div>
     </div>
   </div>
 </div>
@@ -166,6 +305,8 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let refreshInterval = null;
+let latestOrders = [];
+let latestInventory = [];
 
 /* ================= AUTH ================= */
 async function checkAuth() {
@@ -188,7 +329,80 @@ function showDashboard(email) {
   document.getElementById('dashboardScreen').style.display = 'block';
   document.getElementById('userEmail').textContent = email;
   fetchOrders();
+  fetchInventory();
+  fetchShopStatus();
   startAutoRefresh();
+}
+
+/* ================= TABS ================= */
+function switchTab(name) {
+  ['orders', 'customers', 'inventory'].forEach(t => {
+    document.getElementById('tabPanel-' + t).classList.toggle('active', t === name);
+    document.getElementById('tabBtn-' + t).classList.toggle('active', t === name);
+  });
+}
+
+/* ================= SHOP OPEN/CLOSED STATUS ================= */
+let shopIsOpen = true;
+
+async function fetchShopStatus() {
+  const { data, error } = await sb.from('shop_settings').select('*').eq('id', 1).single();
+  const banner = document.getElementById('shopStatusBanner');
+  const text = document.getElementById('shopStatusText');
+  const btn = document.getElementById('shopToggleBtn');
+  const msgInput = document.getElementById('closedMessageInput');
+
+  if (error) {
+    banner.className = 'shop-status-banner closed';
+    text.textContent = "⚠️ Couldn't load shop status — check that the shop_settings table exists.";
+    btn.style.display = 'none';
+    return;
+  }
+
+  shopIsOpen = data.is_open !== false;
+  msgInput.value = data.closed_message || '';
+  renderShopStatus();
+}
+
+function renderShopStatus() {
+  const banner = document.getElementById('shopStatusBanner');
+  const text = document.getElementById('shopStatusText');
+  const btn = document.getElementById('shopToggleBtn');
+
+  if (shopIsOpen) {
+    banner.className = 'shop-status-banner open';
+    text.textContent = '🟢 Shop is OPEN — customers can order';
+    btn.textContent = '🚫 Close Shop for the Day';
+    btn.className = 'btn danger';
+  } else {
+    banner.className = 'shop-status-banner closed';
+    text.textContent = '🔴 Shop is CLOSED — customers cannot order';
+    btn.textContent = '✅ Reopen Shop';
+    btn.className = 'btn primary';
+  }
+  btn.style.display = 'inline-block';
+}
+
+async function toggleShopStatus() {
+  const newStatus = !shopIsOpen;
+  const closedMessage = document.getElementById('closedMessageInput').value.trim()
+    || 'Please check back during our operating hours.';
+
+  const confirmMsg = newStatus
+    ? 'Reopen the shop? Customers will be able to place orders again.'
+    : 'Close the shop for the day? Customers will see a closed banner and won\'t be able to see order totals or check out.';
+  if (!confirm(confirmMsg)) return;
+
+  const { error } = await sb.from('shop_settings')
+    .update({ is_open: newStatus, closed_message: closedMessage })
+    .eq('id', 1);
+
+  if (error) {
+    alert('Failed to update shop status: ' + error.message);
+    return;
+  }
+  shopIsOpen = newStatus;
+  renderShopStatus();
 }
 
 async function handleLogin(e) {
@@ -228,6 +442,9 @@ async function fetchOrders() {
   }
 
   document.getElementById('lastRefreshed').textContent = 'Last refreshed: ' + new Date().toLocaleTimeString();
+
+  latestOrders = data || [];
+  renderCustomers();
 
   if (!data || data.length === 0) {
     container.innerHTML = '<div class="empty-state">No orders found yet. 🥐</div>';
@@ -306,6 +523,184 @@ async function updateOrderStatus(orderId, newStatus) {
   } else {
     // Optional: Show a brief success toast or just let the UI reflect it on next refresh
     console.log(`Order ${orderId} updated to ${newStatus}`);
+  }
+}
+
+/* ================= CUSTOMERS (derived from orders) ================= */
+function renderCustomers() {
+  const container = document.getElementById('customersContainer');
+  const searchEl = document.getElementById('customerSearch');
+  const search = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
+  if (!latestOrders || latestOrders.length === 0) {
+    container.innerHTML = '<div class="empty-state">No customer data yet — customers will show up here once orders come in. 👤</div>';
+    return;
+  }
+
+  // Group orders by phone number
+  const byPhone = {};
+  latestOrders.forEach(order => {
+    const phone = (order.phone || 'unknown').trim();
+    if (!byPhone[phone]) {
+      byPhone[phone] = {
+        phone: phone,
+        name: order.name || 'Unknown',
+        orders: [],
+        total: 0,
+        lastOrder: null
+      };
+    }
+    const c = byPhone[phone];
+    c.orders.push(order);
+    c.total += Number(order.total) || 0;
+    const placed = new Date(order.placed_at);
+    if (!c.lastOrder || placed > new Date(c.lastOrder)) {
+      c.lastOrder = order.placed_at;
+      c.name = order.name || c.name; // keep most recent name on file
+    }
+  });
+
+  let customers = Object.values(byPhone).sort((a, b) => new Date(b.lastOrder) - new Date(a.lastOrder));
+
+  if (search) {
+    customers = customers.filter(c =>
+      c.name.toLowerCase().includes(search) || c.phone.toLowerCase().includes(search)
+    );
+  }
+
+  if (customers.length === 0) {
+    container.innerHTML = '<div class="empty-state">No customers match your search.</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  customers.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'customer-card';
+    const lastDate = c.lastOrder ? new Date(c.lastOrder).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    div.innerHTML = `
+      <div>
+        <div class="customer-name">👤 ${c.name}</div>
+        <div class="customer-meta">📞 <a href="tel:${c.phone}" style="color:var(--terracotta-dark);text-decoration:none;">${c.phone}</a> &nbsp;|&nbsp; Last order: ${lastDate}</div>
+      </div>
+      <div class="customer-stats">
+        <div class="stat-total">₹${c.total.toLocaleString('en-IN')} lifetime</div>
+        <div class="stat-orders">${c.orders.length} order${c.orders.length === 1 ? '' : 's'}</div>
+      </div>
+      <a href="https://wa.me/91${c.phone}" target="_blank" class="btn outline small">💬 WhatsApp</a>
+    `;
+    container.appendChild(div);
+  });
+}
+
+/* ================= INVENTORY (Supabase-backed) ================= */
+async function fetchInventory() {
+  const container = document.getElementById('inventoryContainer');
+  if (container) container.innerHTML = '<div class="loading">Loading inventory...</div>';
+
+  const { data, error } = await sb
+    .from('inventory')
+    .select('*')
+    .order('name', { ascending: true });
+
+  if (error) {
+    container.innerHTML = `<div class="empty-state">Couldn't load inventory: ${error.message}<br><small>Make sure the "inventory" table exists in Supabase (see setup notes).</small></div>`;
+    return;
+  }
+
+  latestInventory = data || [];
+  renderInventory();
+}
+
+function renderInventory() {
+  const container = document.getElementById('inventoryContainer');
+  const summary = document.getElementById('inventorySummary');
+
+  if (!latestInventory || latestInventory.length === 0) {
+    container.innerHTML = '<div class="empty-state">No inventory items yet. Add your first item above. 🧺</div>';
+    if (summary) summary.textContent = '';
+    return;
+  }
+
+  const lowCount = latestInventory.filter(i => Number(i.stock_qty) <= Number(i.low_stock_threshold ?? 0)).length;
+  if (summary) summary.textContent = lowCount > 0 ? `⚠️ ${lowCount} item(s) low on stock` : 'All items sufficiently stocked ✅';
+
+  container.innerHTML = '';
+  latestInventory.forEach(item => {
+    const isLow = Number(item.stock_qty) <= Number(item.low_stock_threshold ?? 0);
+    const div = document.createElement('div');
+    div.className = 'inventory-card' + (isLow ? ' low-stock' : '');
+    div.innerHTML = `
+      <div>
+        <div class="inventory-name">${item.name}</div>
+        <div class="inventory-meta">${item.category || 'Uncategorized'} &nbsp;|&nbsp; Alert below: ${item.low_stock_threshold ?? 0} ${item.unit || ''}</div>
+      </div>
+      <div class="inventory-actions">
+        <span class="stock-badge ${isLow ? 'low' : ''}">${item.stock_qty} ${item.unit || ''}</span>
+        <input type="number" class="qty-input" id="qty-${item.id}" placeholder="New qty" step="0.01">
+        <button class="btn primary small" onclick="updateInventoryStock('${item.id}')">Update</button>
+        <button class="btn danger small" onclick="deleteInventoryItem('${item.id}')">Delete</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+async function addInventoryItem() {
+  const name = document.getElementById('invName').value.trim();
+  const category = document.getElementById('invCategory').value.trim();
+  const stock = parseFloat(document.getElementById('invStock').value);
+  const unit = document.getElementById('invUnit').value.trim();
+  const threshold = parseFloat(document.getElementById('invThreshold').value);
+
+  if (!name || isNaN(stock)) {
+    alert('Please enter at least an item name and current stock amount.');
+    return;
+  }
+
+  const { error } = await sb.from('inventory').insert([{
+    name,
+    category: category || null,
+    stock_qty: stock,
+    unit: unit || null,
+    low_stock_threshold: isNaN(threshold) ? 0 : threshold
+  }]);
+
+  if (error) {
+    alert('Failed to add item: ' + error.message);
+    return;
+  }
+
+  document.getElementById('invName').value = '';
+  document.getElementById('invCategory').value = '';
+  document.getElementById('invStock').value = '';
+  document.getElementById('invUnit').value = '';
+  document.getElementById('invThreshold').value = '';
+  fetchInventory();
+}
+
+async function updateInventoryStock(itemId) {
+  const input = document.getElementById('qty-' + itemId);
+  const newQty = parseFloat(input.value);
+  if (isNaN(newQty)) {
+    alert('Enter a valid quantity first.');
+    return;
+  }
+  const { error } = await sb.from('inventory').update({ stock_qty: newQty }).eq('id', itemId);
+  if (error) {
+    alert('Failed to update stock: ' + error.message);
+  } else {
+    fetchInventory();
+  }
+}
+
+async function deleteInventoryItem(itemId) {
+  if (!confirm('Remove this inventory item?')) return;
+  const { error } = await sb.from('inventory').delete().eq('id', itemId);
+  if (error) {
+    alert('Failed to delete item: ' + error.message);
+  } else {
+    fetchInventory();
   }
 }
 
