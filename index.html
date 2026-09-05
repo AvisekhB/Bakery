@@ -155,6 +155,16 @@
   a.wa-link{color:var(--green);font-weight:700;text-decoration:none;}
   .back-link{background:none;border:none;color:var(--terracotta-dark);font-weight:700;
     cursor:pointer;padding:0;font-size:0.9rem;margin-bottom:10px;}
+
+  /* Shop closed state */
+  .shop-disabled .btn.primary, .shop-disabled .small-step, .shop-disabled .btn.outline.full {
+    pointer-events: none; opacity: 0.45; filter: grayscale(40%);
+  }
+  #shopClosedBanner { font-weight: 600; }
+  .cart-closed-msg {
+    text-align: center; padding: 30px 16px; background: white;
+    border: 1px dashed var(--line); border-radius: 12px; color: var(--brown-dark);
+  }
 </style>
 </head>
 <body>
@@ -230,7 +240,7 @@
       <div class="note-line">Show this code or your Order ID at the counter</div>
       <div class="summary-list" id="confSummary"></div>
       <div class="disclaimer" style="text-align:left;">
-        📍 Pickup instructions: Ring the bell and ask for Aman.<br>
+        📍 Pickup instructions: Ring the bell and ask for <span id="confPickupName">your</span> order.<br>
         Your order is saved online, but the bakery won't get an automatic alert — please also message us on WhatsApp (9999999999) to confirm.
       </div>
       <button class="btn primary full" style="margin-top:16px;" onclick="showScreen('order')">Order More / Done</button>
@@ -265,6 +275,41 @@
 const SUPABASE_URL = "https://ktyibnbbxrfokzeuidkz.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0eWlibmJieHJmb2t6ZXVpZGt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0Njk2MDgsImV4cCI6MjEwNDA0NTYwOH0.yJIJHtaNfYWC_Nwo0ng7TNVsJOh7puR-JAGhM5G-4cQ";
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* ================= SHOP OPEN/CLOSED STATUS ================= */
+let shopOpen = true;
+let shopClosedMessage = "Please check back during our operating hours.";
+
+async function fetchShopStatus(){
+  const { data, error } = await sb.from('shop_settings').select('*').eq('id', 1).single();
+  if(!error && data){
+    shopOpen = data.is_open !== false;
+    shopClosedMessage = data.closed_message || shopClosedMessage;
+  }
+  applyShopStatusUI();
+}
+
+function applyShopStatusUI(){
+  const banner = document.getElementById('shopClosedBanner');
+  const note = document.getElementById('shopClosedNote');
+  const menuMain = document.getElementById('menuMain');
+  const cartBar = document.getElementById('cartBar');
+
+  if(!shopOpen){
+    banner.style.display = 'block';
+    note.textContent = shopClosedMessage;
+    menuMain.classList.add('shop-disabled');
+    cartBar.classList.add('hidden');
+  } else {
+    banner.style.display = 'none';
+    menuMain.classList.remove('shop-disabled');
+    if(cart.length > 0) cartBar.classList.remove('hidden');
+  }
+  if(document.getElementById('screen-cart').classList.contains('active')) renderCart();
+}
+
+// Re-check shop status periodically so a closure shows up without a page reload
+setInterval(fetchShopStatus, 30000);
 
 /* ================= DATA ================= */
 const ITEMS = [
@@ -533,6 +578,13 @@ function renderItemCard(item, uid){
 function renderCart(){
   const list = document.getElementById('cartList');
   const checkoutBtn = document.getElementById('toCheckoutBtn');
+
+  if(!shopOpen){
+    list.innerHTML = `<div class="cart-closed-msg">🚫 <b>We're currently closed for new orders.</b><br>${shopClosedMessage}<br><br>You won't be able to see your order total or check out until we reopen.</div>`;
+    checkoutBtn.style.display = 'none';
+    return;
+  }
+
   if(cart.length === 0){
     list.innerHTML = `<div class="empty-msg">Your cart is empty. Go back to the menu to add something tasty!</div>`;
     checkoutBtn.style.display = 'none';
@@ -576,6 +628,11 @@ function cartTotal(){
 
 function submitOrder(e){
   e.preventDefault();
+  if(!shopOpen){
+    alert("Sorry, we're currently closed for new orders. " + shopClosedMessage);
+    showScreen('order');
+    return false;
+  }
   const name = document.getElementById('custName').value.trim();
   const phone = document.getElementById('custPhone').value.trim();
   const pay = document.querySelector('input[name="pay"]:checked').value;
@@ -611,6 +668,7 @@ function submitOrder(e){
 
 function showConfirmation(order){
   document.getElementById('confOrderId').textContent = "Order ID: " + order.id;
+  document.getElementById('confPickupName').textContent = (order.name || "your") + "'s";
   localStorage.setItem('avisekh_last_order_id', order.id);
   const summary = document.getElementById('confSummary');
   let html = "";
@@ -773,6 +831,7 @@ function showScreen(name){
 /* ================= INIT ================= */
 renderMenu();
 renderCartBar();
+fetchShopStatus();
 </script>
 </body>
 </html>
