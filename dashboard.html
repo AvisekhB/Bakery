@@ -1,1 +1,880 @@
-<
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avisekh Bekary — Owner Dashboard</title>
+<style>
+  :root {
+    --cream: #FFF8EF;
+    --brown: #5C3A21;
+    --brown-dark: #3E2712;
+    --terracotta: #D97B4F;
+    --terracotta-dark: #B85E36;
+    --green: #4C8B5C;
+    --line: #EAD9C4;
+    --white: #FFFFFF;
+    --red: #D32F2F;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--cream);
+    color: var(--brown-dark);
+    padding: 20px;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  
+  /* Login Screen */
+  #loginScreen {
+    max-width: 400px;
+    margin: 60px auto;
+    background: var(--white);
+    padding: 30px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  }
+  #loginScreen h2 { color: var(--brown); margin-top: 0; }
+  #loginScreen input {
+    width: 100%; padding: 12px; margin: 8px 0;
+    border: 1px solid var(--line); border-radius: 8px; font-size: 1rem;
+  }
+  
+  /* Dashboard Screen */
+  #dashboardScreen { display: none; }
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 10px;
+  }
+  header h1 { margin: 0; color: var(--brown); font-size: 1.5rem; }
+  
+  .controls {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  }
+  .btn {
+    border: none; border-radius: 8px; padding: 10px 16px;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer;
+  }
+  .btn.primary { background: var(--terracotta); color: white; }
+  .btn.primary:hover { background: var(--terracotta-dark); }
+  .btn.outline { background: white; border: 1.5px solid var(--brown); color: var(--brown); }
+  .btn.danger { background: var(--red); color: white; }
+
+  .shop-status-banner {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+    border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; border: 1px solid var(--line);
+  }
+  .shop-status-banner.open { background: #E8F5E9; border-color: var(--green); }
+  .shop-status-banner.closed { background: #FDECEA; border-color: var(--red); }
+  .shop-status-text { font-weight: 800; font-size: 1.05rem; }
+  .shop-status-banner.open .shop-status-text { color: var(--green); }
+  .shop-status-banner.closed .shop-status-text { color: var(--red); }
+  .shop-status-sub { font-size: 0.8rem; color: #8a6a4d; margin-top: 2px; font-weight: 400; }
+  .shop-status-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .shop-status-controls input[type="text"] {
+    padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); font-size: 0.85rem;
+    min-width: 220px;
+  }
+  
+  .info-banner {
+    background: #FBEAD9; border: 1px solid var(--terracotta);
+    border-radius: 10px; padding: 12px 16px; font-size: 0.85rem;
+    color: var(--brown-dark); margin-bottom: 20px;
+  }
+
+  /* Order Cards */
+  .order-card {
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px; margin-bottom: 12px;
+    border-left: 5px solid var(--terracotta);
+  }
+  .order-card.status-New { border-left-color: #2196F3; }
+  .order-card.status-Baking { border-left-color: #FF9800; }
+  .order-card.status-Ready { border-left-color: var(--green); }
+  .order-card.status-Picked { border-left-color: #9E9E9E; opacity: 0.7; }
+
+  .order-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 10px; flex-wrap: wrap; gap: 8px;
+  }
+  .order-id { font-weight: 800; font-size: 1.1rem; color: var(--brown); }
+  .order-time { font-size: 0.8rem; color: #8a6a4d; }
+  
+  .customer-info { font-size: 0.9rem; margin-bottom: 10px; }
+  .customer-info strong { color: var(--brown); }
+  
+  .items-list {
+    background: var(--cream); border-radius: 8px; padding: 10px 14px;
+    margin: 10px 0; font-size: 0.9rem;
+  }
+  .items-list ul { margin: 0; padding-left: 20px; }
+  .items-list li { margin-bottom: 4px; }
+  
+  .order-total { font-weight: 700; font-size: 1.05rem; color: var(--terracotta-dark); margin-top: 8px; }
+  .order-note { font-size: 0.85rem; color: var(--red); font-style: italic; margin-top: 6px; }
+
+  .status-actions {
+    display: flex; gap: 8px; margin-top: 14px; align-items: center; flex-wrap: wrap;
+  }
+  .status-actions select {
+    padding: 8px; border-radius: 8px; border: 1px solid var(--line);
+    font-size: 0.9rem; font-weight: 600;
+  }
+
+  .empty-state {
+    text-align: center; padding: 40px; color: #8a6a4d;
+    background: var(--white); border-radius: 12px; border: 1px dashed var(--line);
+  }
+  .loading { text-align: center; padding: 20px; color: var(--brown); }
+  
+  .hidden { display: none !important; }
+
+  /* Tabs */
+  .tab-bar {
+    display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 2px solid var(--line);
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    border: none; background: none; padding: 10px 16px; font-size: 0.95rem;
+    font-weight: 700; color: #8a6a4d; cursor: pointer; border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+  }
+  .tab-btn.active { color: var(--terracotta-dark); border-bottom-color: var(--terracotta); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Customer Cards */
+  .customer-card {
+    background: var(--white); border: 1px solid var(--line);
+    border-radius: 12px; padding: 16px; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+  }
+  .customer-name { font-weight: 800; color: var(--brown); font-size: 1.05rem; }
+  .customer-meta { font-size: 0.85rem; color: #8a6a4d; margin-top: 4px; }
+  .customer-stats { text-align: right; }
+  .customer-stats .stat-total { font-weight: 700; color: var(--terracotta-dark); font-size: 1.05rem; }
+  .customer-stats .stat-orders { font-size: 0.8rem; color: #8a6a4d; }
+  .search-bar {
+    width: 100%; padding: 10px 14px; margin-bottom: 16px;
+    border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem;
+  }
+
+  /* Inventory */
+  .inventory-form {
+    background: var(--white); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px; margin-bottom: 20px;
+  }
+  .inventory-form h3 { margin-top: 0; color: var(--brown); font-size: 1rem; }
+  .form-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;
+  }
+  .form-grid input, .form-grid select {
+    padding: 10px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem;
+    width: 100%;
+  }
+  .inv-search { display: flex; gap: 8px; margin-bottom: 14px; }
+  .inv-filter-btn {
+    border: 1px solid var(--line); background: white; padding: 8px 12px; border-radius: 20px;
+    font-size: 0.8rem; font-weight: 700; color: #8a6a4d; cursor: pointer; white-space: nowrap;
+  }
+  .inv-filter-btn.active { background: var(--terracotta); color: white; border-color: var(--terracotta); }
+  .inv-filters { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 4px; }
+
+  .inventory-card {
+    background: var(--white); border: 1px solid var(--line); border-left: 5px solid var(--green);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+  }
+  .inventory-card.low-stock { border-left-color: #E0A800; }
+  .inventory-card.out-of-stock { border-left-color: var(--red); }
+  .inv-row-top {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px;
+  }
+  .inventory-name { font-weight: 800; color: var(--brown); font-size: 1.02rem; }
+  .inventory-meta { font-size: 0.78rem; color: #8a6a4d; margin-top: 2px; }
+  .stock-badge {
+    font-weight: 700; padding: 4px 10px; border-radius: 20px; font-size: 0.78rem;
+    background: #E8F5E9; color: var(--green); white-space: nowrap;
+  }
+  .stock-badge.low { background: #FFF6E0; color: #B8860B; }
+  .stock-badge.out { background: #FDECEA; color: var(--red); }
+
+  .inv-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .inv-field label {
+    display: block; font-size: 0.7rem; color: #8a6a4d; font-weight: 700;
+    text-transform: uppercase; margin-bottom: 3px;
+  }
+  .inv-field input, .inv-field select {
+    width: 100%; padding: 8px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.9rem;
+  }
+  .inventory-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn.small { padding: 7px 12px; font-size: 0.8rem; }
+  .btn.warn { background: #E0A800; color: white; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen">
+    <h2>👩‍🍳 Avisekh Bekary</h2>
+    <p style="color:#8a6a4d; font-size:0.9rem;">Staff / owner access only.<br>This area is for the bakery owner only. Please log in.</p>
+    <form id="loginForm" onsubmit="handleLogin(event)">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit" class="btn primary" style="width:100%; margin-top:10px;">Log In</button>
+    </form>
+    <p id="loginError" style="color:var(--red); font-size:0.85rem; margin-top:10px; display:none;"></p>
+  </div>
+
+  <!-- DASHBOARD SCREEN -->
+  <div id="dashboardScreen">
+    <header>
+      <h1>📦 Owner Dashboard</h1>
+      <div class="controls">
+        <span id="userEmail" style="font-size:0.85rem; color:#8a6a4d;"></span>
+        <button class="btn outline" onclick="logout()">Log Out</button>
+      </div>
+    </header>
+
+    <div class="shop-status-banner" id="shopStatusBanner">
+      <div>
+        <div class="shop-status-text" id="shopStatusText">Loading shop status...</div>
+        <div class="shop-status-sub">Customers will see this on the ordering site the moment you change it.</div>
+      </div>
+      <div class="shop-status-controls">
+        <input type="text" id="closedMessageInput" placeholder="Message shown to customers when closed">
+        <button class="btn" id="shopToggleBtn" onclick="toggleShopStatus()">...</button>
+      </div>
+    </div>
+
+    <div class="info-banner">
+      ⚠️ <b>Note:</b> Orders here are shared across all devices (saved online via Supabase). This page doesn't send you an automatic alert (like SMS or push notification) when a new order comes in — tap "Refresh Orders" below to check, or ask customers to also message you on WhatsApp.
+    </div>
+
+    <!-- TABS -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tabBtn-orders" onclick="switchTab('orders')">📦 Orders</button>
+      <button class="tab-btn" id="tabBtn-customers" onclick="switchTab('customers')">👥 Customers</button>
+      <button class="tab-btn" id="tabBtn-inventory" onclick="switchTab('inventory')">🧺 Inventory</button>
+    </div>
+
+    <!-- ORDERS PANEL -->
+    <div id="tabPanel-orders" class="tab-panel active">
+      <div class="controls" style="margin-bottom: 20px;">
+        <button class="btn primary" onclick="fetchOrders()">🔄 Refresh Orders</button>
+        <span id="lastRefreshed" style="font-size:0.8rem; color:#8a6a4d; margin-left:auto;"></span>
+      </div>
+
+      <div id="ordersContainer">
+        <div class="loading">Loading orders...</div>
+      </div>
+    </div>
+
+    <!-- CUSTOMERS PANEL -->
+    <div id="tabPanel-customers" class="tab-panel">
+      <div class="controls" style="margin-bottom: 16px;">
+        <button class="btn primary" onclick="fetchOrders()">🔄 Refresh Data</button>
+        <span style="font-size:0.8rem; color:#8a6a4d; margin-left:auto;">Built from your order history</span>
+      </div>
+      <input type="text" class="search-bar" id="customerSearch" placeholder="🔎 Search customers by name or phone..." oninput="renderCustomers()">
+      <div id="customersContainer">
+        <div class="loading">Loading customers...</div>
+      </div>
+    </div>
+
+    <!-- INVENTORY PANEL -->
+    <div id="tabPanel-inventory" class="tab-panel">
+      <div class="info-banner">
+        🧺 This is your live menu stock. Prices and stock here are exactly what customers see and can order — mark an item out of stock and it becomes un-orderable on the site immediately.
+      </div>
+
+      <div class="inventory-form">
+        <h3>➕ Add Inventory Item</h3>
+        <div class="form-grid">
+          <input type="text" id="invName" placeholder="Item name (e.g. Butter Croissant)">
+          <input type="text" id="invCategory" placeholder="Category (e.g. Pastries)">
+          <select id="invType">
+            <option value="Fixed">Fixed (priced per unit)</option>
+            <option value="By-Weight">By-Weight (priced per kg)</option>
+          </select>
+          <select id="invOrderType">
+            <option value="Ready-made">Ready-made (customer orders instantly)</option>
+            <option value="Made-to-order">Made-to-order (needs pickup date/time)</option>
+          </select>
+          <input type="text" id="invUnit" placeholder="Unit (e.g. per piece, per kg)">
+          <input type="number" id="invPrice" placeholder="Price (₹)" min="0" step="0.01">
+          <input type="number" id="invStock" placeholder="Current stock" min="0" step="1">
+          <input type="number" id="invMinStock" placeholder="Minimum stock (low alert)" min="0" step="1">
+          <select id="invEggless">
+            <option value="Both">Eggless & Egg both available</option>
+            <option value="Yes">Eggless only</option>
+            <option value="No">Contains Egg</option>
+          </select>
+        </div>
+        <button class="btn primary" onclick="addInventoryItem()">Add Item</button>
+      </div>
+
+      <div class="inv-search">
+        <input type="text" class="search-bar" id="inventorySearch" placeholder="🔎 Search items by name..." oninput="renderInventory()" style="margin-bottom:0;">
+      </div>
+      <div class="inv-filters">
+        <button class="inv-filter-btn active" data-filter="all" onclick="setInventoryFilter('all')">All</button>
+        <button class="inv-filter-btn" data-filter="in" onclick="setInventoryFilter('in')">In Stock</button>
+        <button class="inv-filter-btn" data-filter="low" onclick="setInventoryFilter('low')">Low Stock</button>
+        <button class="inv-filter-btn" data-filter="out" onclick="setInventoryFilter('out')">Out of Stock</button>
+      </div>
+
+      <div class="controls" style="margin-bottom: 16px;">
+        <button class="btn outline" onclick="fetchInventory()">🔄 Refresh Inventory</button>
+        <span id="inventorySummary" style="font-size:0.85rem; color:#8a6a4d; margin-left:auto;"></span>
+      </div>
+
+      <div id="inventoryContainer">
+        <div class="loading">Loading inventory...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ================= SUPABASE SETUP ================= */
+// Replace with your actual Supabase URL and Anon Key
+const SUPABASE_URL = "https://ktyibnbbxrfokzeuidkz.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0eWlibmJieHJmb2t6ZXVpZGt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0Njk2MDgsImV4cCI6MjEwNDA0NTYwOH0.yJIJHtaNfYWC_Nwo0ng7TNVsJOh7puR-JAGhM5G-4cQ";
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let refreshInterval = null;
+let latestOrders = [];
+let latestInventory = [];
+
+/* ================= AUTH ================= */
+async function checkAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    showDashboard(session.user.email);
+  } else {
+    showLogin();
+  }
+}
+
+function showLogin() {
+  document.getElementById('loginScreen').style.display = 'block';
+  document.getElementById('dashboardScreen').style.display = 'none';
+  stopAutoRefresh();
+}
+
+function showDashboard(email) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('dashboardScreen').style.display = 'block';
+  document.getElementById('userEmail').textContent = email;
+  fetchOrders();
+  fetchInventory();
+  fetchShopStatus();
+  startAutoRefresh();
+}
+
+/* ================= TABS ================= */
+function switchTab(name) {
+  ['orders', 'customers', 'inventory'].forEach(t => {
+    document.getElementById('tabPanel-' + t).classList.toggle('active', t === name);
+    document.getElementById('tabBtn-' + t).classList.toggle('active', t === name);
+  });
+}
+
+/* ================= SHOP OPEN/CLOSED STATUS ================= */
+let shopIsOpen = true;
+
+async function fetchShopStatus() {
+  const { data, error } = await sb.from('shop_settings').select('*').eq('id', 1).single();
+  const banner = document.getElementById('shopStatusBanner');
+  const text = document.getElementById('shopStatusText');
+  const btn = document.getElementById('shopToggleBtn');
+  const msgInput = document.getElementById('closedMessageInput');
+
+  if (error) {
+    banner.className = 'shop-status-banner closed';
+    text.textContent = "⚠️ Couldn't load shop status — check that the shop_settings table exists.";
+    btn.style.display = 'none';
+    return;
+  }
+
+  shopIsOpen = data.is_open !== false;
+  msgInput.value = data.closed_message || '';
+  renderShopStatus();
+}
+
+function renderShopStatus() {
+  const banner = document.getElementById('shopStatusBanner');
+  const text = document.getElementById('shopStatusText');
+  const btn = document.getElementById('shopToggleBtn');
+
+  if (shopIsOpen) {
+    banner.className = 'shop-status-banner open';
+    text.textContent = '🟢 Shop is OPEN — customers can order';
+    btn.textContent = '🚫 Close Shop for the Day';
+    btn.className = 'btn danger';
+  } else {
+    banner.className = 'shop-status-banner closed';
+    text.textContent = '🔴 Shop is CLOSED — customers cannot order';
+    btn.textContent = '✅ Reopen Shop';
+    btn.className = 'btn primary';
+  }
+  btn.style.display = 'inline-block';
+}
+
+async function toggleShopStatus() {
+  const newStatus = !shopIsOpen;
+  const closedMessage = document.getElementById('closedMessageInput').value.trim()
+    || 'Please check back during our operating hours.';
+
+  const confirmMsg = newStatus
+    ? 'Reopen the shop? Customers will be able to place orders again.'
+    : 'Close the shop for the day? Customers will see a closed banner and won\'t be able to see order totals or check out.';
+  if (!confirm(confirmMsg)) return;
+
+  const { error } = await sb.from('shop_settings')
+    .update({ is_open: newStatus, closed_message: closedMessage })
+    .eq('id', 1);
+
+  if (error) {
+    alert('Failed to update shop status: ' + error.message);
+    return;
+  }
+  shopIsOpen = newStatus;
+  renderShopStatus();
+}
+
+async function handleLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const errorEl = document.getElementById('loginError');
+  
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    errorEl.textContent = "Login failed: " + error.message;
+    errorEl.style.display = 'block';
+  } else {
+    errorEl.style.display = 'none';
+    showDashboard(data.user.email);
+  }
+}
+
+async function logout() {
+  await sb.auth.signOut();
+  showLogin();
+}
+
+/* ================= ORDERS MANAGEMENT ================= */
+async function fetchOrders() {
+  const container = document.getElementById('ordersContainer');
+  container.innerHTML = '<div class="loading">Loading orders...</div>';
+
+  const { data, error } = await sb
+    .from('orders')
+    .select('*')
+    .order('placed_at', { ascending: false });
+
+  if (error) {
+    container.innerHTML = `<div class="empty-state">Error loading orders: ${error.message}</div>`;
+    return;
+  }
+
+  document.getElementById('lastRefreshed').textContent = 'Last refreshed: ' + new Date().toLocaleTimeString();
+
+  latestOrders = data || [];
+  renderCustomers();
+
+  if (!data || data.length === 0) {
+    container.innerHTML = '<div class="empty-state">No orders found yet. 🥐</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  data.forEach(order => {
+    container.appendChild(createOrderCard(order));
+  });
+}
+
+function createOrderCard(order) {
+  const div = document.createElement('div');
+  const statusClass = order.status.replace(' ', ''); // e.g., "Picked Up" -> "PickedUp"
+  div.className = `order-card status-${statusClass}`;
+
+  const date = new Date(order.placed_at).toLocaleString('en-IN', { 
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' 
+  });
+
+  let itemsHtml = '';
+  if (Array.isArray(order.items)) {
+    itemsHtml = '<ul>' + order.items.map(item => {
+      let detail = `${item.name} × ${item.qty}`;
+      if (item.type === 'Made-to-order') {
+        detail += ` <small>(Pickup: ${item.pickupDate} ${item.pickupTime})</small>`;
+        if (item.message) detail += ` <br><small>🎂 "${item.message}"</small>`;
+      }
+      return `<li>${detail}</li>`;
+    }).join('') + '</ul>';
+  }
+
+  div.innerHTML = `
+    <div class="order-header">
+      <div>
+        <div class="order-id">#${order.id}</div>
+        <div class="order-time">${date}</div>
+      </div>
+      <div style="font-weight:700; color:var(--brown);">${order.status}</div>
+    </div>
+    <div class="customer-info">
+      👤 <strong>${order.name}</strong> &nbsp;|&nbsp; 📞 <a href="tel:${order.phone}" style="color:var(--terracotta-dark);text-decoration:none;">${order.phone}</a>
+    </div>
+    <div class="items-list">
+      ${itemsHtml}
+      <div class="order-total">Total: ₹${order.total} &nbsp;|&nbsp; Payment: ${order.pay}</div>
+      ${order.note ? `<div class="order-note">📝 Note: ${order.note}</div>` : ''}
+    </div>
+    <div class="status-actions">
+      <label style="font-size:0.85rem; font-weight:600;">Update Status:</label>
+      <select onchange="updateOrderStatus('${order.id}', this.value)">
+        <option value="New" ${order.status === 'New' ? 'selected' : ''}>🆕 New</option>
+        <option value="Baking" ${order.status === 'Baking' ? 'selected' : ''}>🔥 Baking</option>
+        <option value="Ready" ${order.status === 'Ready' ? 'selected' : ''}>✅ Ready for Pickup</option>
+        <option value="Picked Up" ${order.status === 'Picked Up' ? 'selected' : ''}>📦 Picked Up</option>
+      </select>
+      <a href="https://wa.me/91${order.phone}?text=Hi%20${encodeURIComponent(order.name)}!%20Your%20order%20#${order.id}%20at%20Avisekh%20Bekary%20is%20now%20${encodeURIComponent(order.status)}." 
+         target="_blank" class="btn outline" style="font-size:0.8rem; padding:8px 12px;">
+         💬 WhatsApp Customer
+      </a>
+    </div>
+  `;
+  return div;
+}
+
+async function updateOrderStatus(orderId, newStatus) {
+  const { error } = await sb
+    .from('orders')
+    .update({ status: newStatus })
+    .eq('id', orderId);
+
+  if (error) {
+    alert('Failed to update status: ' + error.message);
+    fetchOrders(); // Revert UI on error
+  } else {
+    // Optional: Show a brief success toast or just let the UI reflect it on next refresh
+    console.log(`Order ${orderId} updated to ${newStatus}`);
+  }
+}
+
+/* ================= CUSTOMERS (derived from orders) ================= */
+function renderCustomers() {
+  const container = document.getElementById('customersContainer');
+  const searchEl = document.getElementById('customerSearch');
+  const search = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
+  if (!latestOrders || latestOrders.length === 0) {
+    container.innerHTML = '<div class="empty-state">No customer data yet — customers will show up here once orders come in. 👤</div>';
+    return;
+  }
+
+  // Group orders by phone number
+  const byPhone = {};
+  latestOrders.forEach(order => {
+    const phone = (order.phone || 'unknown').trim();
+    if (!byPhone[phone]) {
+      byPhone[phone] = {
+        phone: phone,
+        name: order.name || 'Unknown',
+        orders: [],
+        total: 0,
+        lastOrder: null
+      };
+    }
+    const c = byPhone[phone];
+    c.orders.push(order);
+    c.total += Number(order.total) || 0;
+    const placed = new Date(order.placed_at);
+    if (!c.lastOrder || placed > new Date(c.lastOrder)) {
+      c.lastOrder = order.placed_at;
+      c.name = order.name || c.name; // keep most recent name on file
+    }
+  });
+
+  let customers = Object.values(byPhone).sort((a, b) => new Date(b.lastOrder) - new Date(a.lastOrder));
+
+  if (search) {
+    customers = customers.filter(c =>
+      c.name.toLowerCase().includes(search) || c.phone.toLowerCase().includes(search)
+    );
+  }
+
+  if (customers.length === 0) {
+    container.innerHTML = '<div class="empty-state">No customers match your search.</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  customers.forEach(c => {
+    const div = document.createElement('div');
+    div.className = 'customer-card';
+    const lastDate = c.lastOrder ? new Date(c.lastOrder).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    div.innerHTML = `
+      <div>
+        <div class="customer-name">👤 ${c.name}</div>
+        <div class="customer-meta">📞 <a href="tel:${c.phone}" style="color:var(--terracotta-dark);text-decoration:none;">${c.phone}</a> &nbsp;|&nbsp; Last order: ${lastDate}</div>
+      </div>
+      <div class="customer-stats">
+        <div class="stat-total">₹${c.total.toLocaleString('en-IN')} lifetime</div>
+        <div class="stat-orders">${c.orders.length} order${c.orders.length === 1 ? '' : 's'}</div>
+      </div>
+      <a href="https://wa.me/91${c.phone}" target="_blank" class="btn outline small">💬 WhatsApp</a>
+    `;
+    container.appendChild(div);
+  });
+}
+
+/* ================= INVENTORY (Supabase-backed, menu-linked) ================= */
+let inventoryFilter = 'all';
+
+function setInventoryFilter(filter) {
+  inventoryFilter = filter;
+  document.querySelectorAll('.inv-filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.filter === filter);
+  });
+  renderInventory();
+}
+
+async function fetchInventory() {
+  const container = document.getElementById('inventoryContainer');
+  if (container) container.innerHTML = '<div class="loading">Loading inventory...</div>';
+
+  const { data, error } = await sb
+    .from('inventory')
+    .select('*')
+    .order('name', { ascending: true });
+
+  if (error) {
+    container.innerHTML = `<div class="empty-state">Couldn't load inventory: ${error.message}<br><small>Make sure the "inventory" table exists in Supabase (see setup notes).</small></div>`;
+    return;
+  }
+
+  latestInventory = data || [];
+  renderInventory();
+}
+
+function inventoryStatus(item) {
+  if (item.is_marked_out) return 'out';
+  if (Number(item.stock_qty) <= 0) return 'out';
+  if (Number(item.stock_qty) <= Number(item.min_stock ?? 0)) return 'low';
+  return 'in';
+}
+
+function renderInventory() {
+  const container = document.getElementById('inventoryContainer');
+  const summary = document.getElementById('inventorySummary');
+  const searchEl = document.getElementById('inventorySearch');
+  const search = searchEl ? searchEl.value.trim().toLowerCase() : '';
+
+  if (!latestInventory || latestInventory.length === 0) {
+    container.innerHTML = '<div class="empty-state">No inventory items yet. Add your first item above. 🧺</div>';
+    if (summary) summary.textContent = '';
+    return;
+  }
+
+  const outCount = latestInventory.filter(i => inventoryStatus(i) === 'out').length;
+  const lowCount = latestInventory.filter(i => inventoryStatus(i) === 'low').length;
+  if (summary) {
+    const parts = [];
+    if (outCount > 0) parts.push(`🔴 ${outCount} out of stock`);
+    if (lowCount > 0) parts.push(`🟡 ${lowCount} low`);
+    summary.textContent = parts.length ? parts.join(' · ') : 'All items in stock ✅';
+  }
+
+  let items = latestInventory;
+  if (search) items = items.filter(i => i.name.toLowerCase().includes(search));
+  if (inventoryFilter !== 'all') items = items.filter(i => inventoryStatus(i) === inventoryFilter);
+
+  if (items.length === 0) {
+    container.innerHTML = '<div class="empty-state">No items match your filter.</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  items.forEach(item => {
+    const status = inventoryStatus(item);
+    const div = document.createElement('div');
+    div.className = 'inventory-card' + (status === 'low' ? ' low-stock' : status === 'out' ? ' out-of-stock' : '');
+
+    const statusLabel = status === 'out' ? 'Out of Stock' : status === 'low' ? 'Low Stock' : 'In Stock';
+    const statusClass = status === 'out' ? 'out' : status === 'low' ? 'low' : '';
+    const markBtnLabel = item.is_marked_out ? '✅ Mark In Stock' : '🚫 Mark Out';
+    const markBtnClass = item.is_marked_out ? 'btn primary small' : 'btn warn small';
+
+    div.innerHTML = `
+      <div class="inv-row-top">
+        <div>
+          <div class="inventory-name">${item.name}</div>
+          <div class="inventory-meta">${item.category || 'Uncategorized'} &nbsp;|&nbsp; ${item.item_type || 'Fixed'} &nbsp;|&nbsp; ${item.unit || ''}</div>
+        </div>
+        <span class="stock-badge ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="inv-fields">
+        <div class="inv-field">
+          <label>Price (₹)</label>
+          <input type="number" min="0" step="0.01" id="price-${item.id}" value="${item.price}">
+        </div>
+        <div class="inv-field">
+          <label>Stock</label>
+          <input type="number" min="0" step="1" id="stock-${item.id}" value="${item.stock_qty}">
+        </div>
+        <div class="inv-field">
+          <label>Min Stock</label>
+          <input type="number" min="0" step="1" id="minstock-${item.id}" value="${item.min_stock}">
+        </div>
+        <div class="inv-field">
+          <label>Unit</label>
+          <input type="text" id="unit-${item.id}" value="${item.unit || ''}">
+        </div>
+        <div class="inv-field">
+          <label>Order Type</label>
+          <select id="ordertype-${item.id}">
+            <option value="Ready-made" ${item.order_type !== 'Made-to-order' ? 'selected' : ''}>Ready-made</option>
+            <option value="Made-to-order" ${item.order_type === 'Made-to-order' ? 'selected' : ''}>Made-to-order</option>
+          </select>
+        </div>
+        <div class="inv-field">
+          <label>Egg</label>
+          <select id="eggless-${item.id}">
+            <option value="Both" ${item.eggless === 'Both' || !item.eggless ? 'selected' : ''}>Both</option>
+            <option value="Yes" ${item.eggless === 'Yes' ? 'selected' : ''}>Eggless</option>
+            <option value="No" ${item.eggless === 'No' ? 'selected' : ''}>Contains Egg</option>
+          </select>
+        </div>
+      </div>
+      <div class="inventory-actions">
+        <button class="btn primary small" onclick="saveInventoryItem('${item.id}')">💾 Save Changes</button>
+        <button class="${markBtnClass}" onclick="toggleMarkOut('${item.id}', ${item.is_marked_out ? 'false' : 'true'})">${markBtnLabel}</button>
+        <button class="btn danger small" onclick="deleteInventoryItem('${item.id}')">Delete</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+async function addInventoryItem() {
+  const name = document.getElementById('invName').value.trim();
+  const category = document.getElementById('invCategory').value.trim();
+  const itemType = document.getElementById('invType').value;
+  const orderType = document.getElementById('invOrderType').value;
+  const unit = document.getElementById('invUnit').value.trim();
+  const price = parseFloat(document.getElementById('invPrice').value);
+  const stock = parseFloat(document.getElementById('invStock').value);
+  const minStock = parseFloat(document.getElementById('invMinStock').value);
+  const eggless = document.getElementById('invEggless').value;
+
+  if (!name || isNaN(price) || isNaN(stock)) {
+    alert('Please enter at least an item name, price, and current stock amount.');
+    return;
+  }
+
+  const { error } = await sb.from('inventory').insert([{
+    name,
+    category: category || null,
+    item_type: itemType,
+    order_type: orderType,
+    unit: unit || null,
+    price,
+    stock_qty: stock,
+    min_stock: isNaN(minStock) ? 0 : minStock,
+    eggless,
+    is_marked_out: false
+  }]);
+
+  if (error) {
+    alert('Failed to add item: ' + error.message);
+    return;
+  }
+
+  document.getElementById('invName').value = '';
+  document.getElementById('invCategory').value = '';
+  document.getElementById('invUnit').value = '';
+  document.getElementById('invPrice').value = '';
+  document.getElementById('invStock').value = '';
+  document.getElementById('invMinStock').value = '';
+  fetchInventory();
+}
+
+async function saveInventoryItem(itemId) {
+  const price = parseFloat(document.getElementById('price-' + itemId).value);
+  const stock = parseFloat(document.getElementById('stock-' + itemId).value);
+  const minStock = parseFloat(document.getElementById('minstock-' + itemId).value);
+  const unit = document.getElementById('unit-' + itemId).value.trim();
+  const orderType = document.getElementById('ordertype-' + itemId).value;
+  const eggless = document.getElementById('eggless-' + itemId).value;
+
+  if (isNaN(price) || isNaN(stock) || isNaN(minStock)) {
+    alert('Price, stock, and minimum stock must all be valid numbers.');
+    return;
+  }
+
+  const { error } = await sb.from('inventory').update({
+    price, stock_qty: stock, min_stock: minStock, unit: unit || null,
+    order_type: orderType, eggless
+  }).eq('id', itemId);
+
+  if (error) {
+    alert('Failed to save changes: ' + error.message);
+  } else {
+    fetchInventory();
+  }
+}
+
+async function toggleMarkOut(itemId, markOut) {
+  const { error } = await sb.from('inventory').update({ is_marked_out: markOut }).eq('id', itemId);
+  if (error) {
+    alert('Failed to update status: ' + error.message);
+  } else {
+    fetchInventory();
+  }
+}
+
+async function deleteInventoryItem(itemId) {
+  if (!confirm('Remove this inventory item? It will disappear from the customer menu too.')) return;
+  const { error } = await sb.from('inventory').delete().eq('id', itemId);
+  if (error) {
+    alert('Failed to delete item: ' + error.message);
+  } else {
+    fetchInventory();
+  }
+}
+
+/* ================= AUTO REFRESH ================= */
+function startAutoRefresh() {
+  stopAutoRefresh();
+  refreshInterval = setInterval(fetchOrders, 30000); // Refresh every 30 seconds
+}
+
+function stopAutoRefresh() {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+    refreshInterval = null;
+  }
+}
+
+/* ================= INIT ================= */
+checkAuth();
+
+// Listen for auth state changes (e.g., if logged out from another tab)
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' && session) {
+    showDashboard(session.user.email);
+  } else if (event === 'SIGNED_OUT') {
+    showLogin();
+  }
+});
+</script>
+</body>
+</html>
